@@ -38,17 +38,19 @@ io.on('connection', (socket) => {
     console.log('startGame')
     showingWinScreen = false;
     var fps = 30;
-    setInterval(() => {
+    var interval = setInterval(() => {
       if (showingWinScreen) {
-        socket.emit('showingWinScreen', winningPlayer)
+        socket.emit('showingWinScreen', winningPlayer);
+        clearInterval(interval);
+        console.log('interval', interval);
       } else {
         moveEverything()
-        socket.emit('updateBallPos', { x: ballX, y: ballY });
+        socket.emit('updateBallPos', { x: ballX, y: ballY, p1score: player1score, p2score: player2score });
         socket.emit('updatePlayer2Pos', paddle2Y);
       }
       
     }, 1000 / fps);
-    
+    console.log('interval', interval);
   });
 
 });

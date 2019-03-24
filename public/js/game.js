@@ -16,7 +16,7 @@ var player2score = 0;
 const WINNING_SCORE = 3;
 
 var showingWinScreen = true;
-var winningPlayer = 'No one';
+var winningPlayer = 'PLAY';
 
 var socket = io();
 
@@ -38,11 +38,14 @@ socket.on('disconnect', function () {
 });
 
 
-socket.on('updateBallPos', function ({x, y}) {
+socket.on('updateBallPos', function ({x, y, p1score, p2score}) {
   // Update ball pos
   ballX = x;
   ballY = y;
+  player1score = p1score;
+  player2score = p2score;
   drawEverything();
+  console.log('updateBallPos')
 });
 
 socket.on('updatePlayer1Pos', function (y) {
@@ -53,12 +56,12 @@ socket.on('updatePlayer2Pos', function (y) {
   paddle2Y = y ;
 });
 
-socket.on('showingWinScreen', function(winningPlayer) {
-  console.log('someone won', winningPlayer)
+socket.on('showingWinScreen', function(newWinningPlayer) {
+  console.log('show win screen')
   showingWinScreen = true;
-  winningPlayer = winningPlayer;
+  winningPlayer = newWinningPlayer;
   drawEverything();
-})
+});
 
 
 function calculateMousePos(e) {
@@ -74,6 +77,7 @@ function calculateMousePos(e) {
 
 function handleMouseClick (e) {
   if (showingWinScreen) {
+    socket.emit('startGame');
     player1score = 0;
     player2score = 0;
     showingWinScreen = false;
@@ -84,8 +88,6 @@ window.onload = function() {
   console.log('onload');
   canvas = document.getElementById('gameCanvas');
   canvasContext = canvas.getContext('2d');
-
-  socket.emit('startGame');
 
   drawEverything();
 
@@ -123,7 +125,8 @@ function drawEverything() {
     canvasContext.fillStyle = 'white';
     const centerX = canvas.width / 2 - 30;
     const centerY = canvas.height / 2;
-    canvasContext.fillText(`${winningPlayer} won!`, centerX, centerY);
+    
+    canvasContext.fillText( `${winningPlayer} won!`, centerX, centerY);
 
     
     canvasContext.fillText('Click to continue', centerX-5, centerY + 25);
