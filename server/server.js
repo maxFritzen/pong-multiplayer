@@ -25,32 +25,70 @@ var showingWinScreen = false;
 var winningPlayer;
 var player1score = 0;
 var player2score = 0;
-const WINNING_SCORE = 1;
+const WINNING_SCORE = 3;
+
+var player1Ready = false;
+var player2Ready = false;
 
 io.on('connection', (socket) => {
   console.log('New user connected');
+  player1Ready = false;
+  player2Ready = false;
+  showingWinScreen = true;
+
+  socket.on('join', (params, callback) => {
+
+    socket.join(params.room);
+    socket.broadcast.to(params.room).emit('newPlayerJoined');
+  });
+
   socket.on('updateMousePosPlayer1', ({x , y}) => {
     paddle1Y = y - PADDLE_HEIGHT / 2;
     socket.emit('updatePlayer1Pos', paddle1Y)
   });
 
-  socket.on('startGame', () => {
+  socket.on('updateMousePosPlayer2', ({x , y}) => {
+    paddle2Y = y - PADDLE_HEIGHT / 2;
+    socket.emit('updatePlayer2Pos', paddle2Y)
+  });
+
+  function startGame () {
     console.log('startGame')
     showingWinScreen = false;
     var fps = 30;
     var interval = setInterval(() => {
       if (showingWinScreen) {
-        socket.emit('showingWinScreen', winningPlayer);
+        console.log('winning player: ', winningPlayer);
+        io.emit('showingWinScreen', winningPlayer);
+        player1Ready = false;
+        player2Ready = false;
+        player1score = 0;
+        player2score = 0;
         clearInterval(interval);
-        console.log('interval', interval);
       } else {
         moveEverything()
-        socket.emit('updateBallPos', { x: ballX, y: ballY, p1score: player1score, p2score: player2score });
-        socket.emit('updatePlayer2Pos', paddle2Y);
+        io.emit('updateBallPos', { x: ballX, y: ballY, p1score: player1score, p2score: player2score });
+        io.emit('updatePlayer1Pos', paddle1Y);
+        io.emit('updatePlayer2Pos', paddle2Y);
       }
       
     }, 1000 / fps);
-    console.log('interval', interval);
+  };
+
+  socket.on('playerReady', (player) => {
+    if (player === 'player1') {
+      console.log('player 1 ready');
+      player1Ready = true;
+      io.emit('playerJoined', player);
+    } else if( player === 'player2') {
+      console.log('player 2 ready');
+      player2Ready = true;
+      io.emit('playerJoined', player);
+    }
+
+    if (player1Ready && player2Ready) {
+      startGame();
+    }
   });
 
 });
@@ -66,7 +104,7 @@ var canvas = {
 
 function moveEverything() {
 
-  computerMovement()
+  // computerMovement()
 
   ballX += ballSpeedX;
   ballY += ballSpeedY;

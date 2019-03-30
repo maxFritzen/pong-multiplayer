@@ -18,6 +18,23 @@ const WINNING_SCORE = 3;
 var showingWinScreen = true;
 var winningPlayer = 'PLAY';
 
+var player1Join = {
+  x: 200,
+  y: 400
+}
+
+var player2Join = {
+  x: 600,
+  y: 400
+}
+
+var centerX = 400;
+var centerY = 300;
+
+var hasChosenPlayer = '';
+var joinText1 = ' Player1: click to join';
+var joinText2 = ' Player2: click to join';
+
 var socket = io();
 
 socket.on('connect', function () {
@@ -37,6 +54,10 @@ socket.on('disconnect', function () {
   console.log('Disconnected from server')
 });
 
+socket.on('newPlayerJoined', function () {
+  console.log('New player joined');
+});
+
 
 socket.on('updateBallPos', function ({x, y, p1score, p2score}) {
   // Update ball pos
@@ -44,8 +65,8 @@ socket.on('updateBallPos', function ({x, y, p1score, p2score}) {
   ballY = y;
   player1score = p1score;
   player2score = p2score;
+  showingWinScreen = false;
   drawEverything();
-  console.log('updateBallPos')
 });
 
 socket.on('updatePlayer1Pos', function (y) {
@@ -59,7 +80,20 @@ socket.on('updatePlayer2Pos', function (y) {
 socket.on('showingWinScreen', function(newWinningPlayer) {
   console.log('show win screen')
   showingWinScreen = true;
+  hasChosenPlayer = '';
+  joinText1 = ' Player1: click to join';
+  joinText2 = ' Player2: click to join';
   winningPlayer = newWinningPlayer;
+  drawEverything();
+});
+
+socket.on('playerJoined', function(player) {
+  console.log('playerjoined', player);
+  if (player === 'player1') {
+    joinText1 = 'Player1: Ready';
+  } else if (player === 'player2'){
+    joinText2 = 'Player2: Ready';
+  }
   drawEverything();
 });
 
@@ -76,11 +110,28 @@ function calculateMousePos(e) {
 }
 
 function handleMouseClick (e) {
-  if (showingWinScreen) {
-    socket.emit('startGame');
-    player1score = 0;
-    player2score = 0;
-    showingWinScreen = false;
+  console.log('handleMouseClick');
+  if (showingWinScreen && !hasChosenPlayer) {
+    // socket.emit('startGame');
+    const targetPlayer1 = 
+      (e.x > player1Join.x - 10 && e.x < player1Join.x + 100)
+      && e.y > player1Join.y - 40 && e.y < player1Join.y + 40;
+
+    const targetPlayer2 = 
+      (e.x > player2Join.x - 10 && e.x < player2Join.x + 100)
+      && e.y > player2Join.y - 40 && e.y < player2Join.y + 40;
+    if (targetPlayer1) {
+      console.log('player1')
+      // emit some 'player ready' - call
+      hasChosenPlayer = 'player1';
+      socket.emit('playerReady', 'player1');
+
+    } else if (targetPlayer2) {
+      console.log('player2')
+      // emit some 'player ready' - call
+      hasChosenPlayer = 'player2';
+      socket.emit('playerReady', 'player2');
+    }
   }
 }
 
@@ -88,6 +139,12 @@ window.onload = function() {
   console.log('onload');
   canvas = document.getElementById('gameCanvas');
   canvasContext = canvas.getContext('2d');
+  player1Join.x = canvas.width / 2 - 200;
+  player2Join.x = canvas.width / 2 + 200;
+  centerY = canvas.height / 2 - 25;
+  centerX = canvas.width / 2;
+  player1Join.y = centerY;
+  player2Join.y = centerY;
 
   drawEverything();
 
@@ -95,8 +152,16 @@ window.onload = function() {
   canvas.addEventListener('mousemove',
     function(e) {
       var mousePos = calculateMousePos(e);
-      // Skicka mousePos till backend
-      socket.emit('updateMousePosPlayer1', mousePos);
+      // Skicka med vilken spelare jag styr (hasChosenPlayer)
+      // Server uppdaterar accordingly
+      // Alternativt köra en if-sats här
+      if (hasChosenPlayer === 'player1') {
+        socket.emit('updateMousePosPlayer1', mousePos);
+      } else if (hasChosenPlayer === 'player2') {
+        socket.emit('updateMousePosPlayer2', mousePos);
+      }
+      
+      // socket.emit('updateMousePosPlayer1', mousePos);
 
     });
 }
@@ -123,13 +188,12 @@ function drawEverything() {
 
   if (showingWinScreen) {
     canvasContext.fillStyle = 'white';
-    const centerX = canvas.width / 2 - 30;
-    const centerY = canvas.height / 2;
     
     canvasContext.fillText( `${winningPlayer} won!`, centerX, centerY);
-
-    
+    console.log('winning player: ', winningPlayer)
     canvasContext.fillText('Click to continue', centerX-5, centerY + 25);
+    canvasContext.fillText(joinText1, player1Join.x, player1Join.y);
+    canvasContext.fillText(joinText2, player2Join.x, player2Join.y);
     return;
   }
 
