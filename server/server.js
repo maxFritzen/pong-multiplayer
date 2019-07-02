@@ -43,48 +43,10 @@ io.on('connection', (socket) => {
     socket.broadcast.to(params.room).emit('newPlayerJoined');
   });
 
-  socket.on('updateMousePosPlayer1', ({x , y}) => {
-    // paddle1Y = y - PADDLE_HEIGHT / 2;
-    const currentPos = paddle1Y;
+  socket.on('updateMousePosPlayer1', ({y}) => {
     pointToWherePaddleShouldGo = y;
-    // if (currentPos > y) {
-    //   console.log('Should go up', );
-    //   paddle1Y -= 10;
-      
 
-    // } else if (currentPos <= y) {
-    //   console.log('Should go down');
-    //   //Bör kanske använda mig utav direction här snarare än att direkt ändra? 
-    //   // Och bara ändra tex var fjärde emit? Emit ska bara vara i setInterval.
-    //   // Eller...Så kanske det snarare är clienten som bara skickar med 'updateDirection' när den borde? 
-    //   paddle1Y += 10;
-      
-    // } else {
-    //   console.log('Should stay');
-      
-    // }
-    // socket.emit('updatePlayer1Pos', paddle1Y)
   });
-
-  // socket.on('updateMousePosPlayer1', ({x , y}) => {
-  //   // paddle1Y = y - PADDLE_HEIGHT / 2;
-  //   const currentPos = paddle1Y;
-  //   if (currentPos >= y) {
-  //     console.log('Should go up', );
-  //     paddle1Y -= 0.10;
-  //   } else if (currentPos <= y) {
-  //     console.log('Should go down');
-  //     //Bör kanske använda mig utav direction här snarare än att direkt ändra? 
-  //     // Och bara ändra tex var fjärde emit?
-  //     // Eller...Så kanske det snarae är clienten som bara skickar med 'updateDirection' när den borde? 
-  //     /
-  //     paddle1Y += 0.10;
-  //   } else {
-  //     console.log('Should stay');
-      
-  //   }
-  //   socket.emit('updatePlayer1Pos', paddle1Y)
-  // });
 
   socket.on('updateMousePosPlayer2', ({x , y}) => {
     paddle2Y = y - PADDLE_HEIGHT / 2;
@@ -187,7 +149,7 @@ function movePaddle1() {
 
 function moveEverything() {
 
-  // computerMovement()
+  computerMovement()
   moveBall()
   movePaddle1()
   io.emit('updateBallPos', { x: ballX, y: ballY, p1score: player1score, p2score: player2score });

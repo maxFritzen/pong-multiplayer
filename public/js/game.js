@@ -163,42 +163,16 @@ window.onload = function() {
     socket.emit('playerReady', 'player2');
   }
   drawEverything();
-  var direction = 'up'; // direction of paddle
   canvas.addEventListener('mousedown', handleMouseClick);
   canvas.addEventListener('mousemove',
     function(e) {
       var mousePos = calculateMousePos(e);
-      // y blir mindre ju högre upp man är. så 0 är i top.
-      // Men kommer ju alltid vara antingne över eller under. 
-      // Vill väl skicka emita när det har ändrats snarare väl?
-      // Så första gången skickar emit 'UPP'
-      // Sen om man har kvar muspekare ovanför rör sig paddle mot muspekaren
-      // Hamnar muspekare under emitas 'NER'.
-      // if (hasChosenPlayer === 'player1') {
-      //   if (mousePos.y <= paddle1Y && direction === 'down') {
-      //     direction = 'up';
-      //     // Should go up
-      //     console.log('Should go up');
-      //     socket.emit('updateMousePosPlayer1', mousePos);
-      //   } else if (mousePos.y >= paddle1Y && direction === 'up') {
-      //     direction = 'down'
-      //     // Should go down
-      //     console.log('Should go down');
-      //     socket.emit('updateMousePosPlayer1', mousePos);
-      //   }
-      //   // socket.emit('updateMousePosPlayer1', mousePos);
-      // } else if (hasChosenPlayer === 'player2') {
-      //   socket.emit('updateMousePosPlayer2', mousePos);
-      // }
-      
       socket.emit('updateMousePosPlayer1', mousePos);
-
     });
 }
 
 function computerMovement() {
   var paddle2YCenter = paddle2Y + (PADDLE_HEIGHT / 2);
-  // paddle2Y = ballY - 50;
   if (paddle2YCenter < ballY - 35) {
     paddle2Y += 10;
   } else if (paddle2YCenter > ballY + 35){
