@@ -29,6 +29,7 @@ const WINNING_SCORE = 3;
 
 var player1Ready = false;
 var player2Ready = false;
+var pointToWherePaddleShouldGo = 0; // Använd den här för att uppdatera paddle1
 
 io.on('connection', (socket) => {
   console.log('New user connected');
@@ -43,9 +44,47 @@ io.on('connection', (socket) => {
   });
 
   socket.on('updateMousePosPlayer1', ({x , y}) => {
-    paddle1Y = y - PADDLE_HEIGHT / 2;
-    socket.emit('updatePlayer1Pos', paddle1Y)
+    // paddle1Y = y - PADDLE_HEIGHT / 2;
+    const currentPos = paddle1Y;
+    pointToWherePaddleShouldGo = y;
+    // if (currentPos > y) {
+    //   console.log('Should go up', );
+    //   paddle1Y -= 10;
+      
+
+    // } else if (currentPos <= y) {
+    //   console.log('Should go down');
+    //   //Bör kanske använda mig utav direction här snarare än att direkt ändra? 
+    //   // Och bara ändra tex var fjärde emit? Emit ska bara vara i setInterval.
+    //   // Eller...Så kanske det snarare är clienten som bara skickar med 'updateDirection' när den borde? 
+    //   paddle1Y += 10;
+      
+    // } else {
+    //   console.log('Should stay');
+      
+    // }
+    // socket.emit('updatePlayer1Pos', paddle1Y)
   });
+
+  // socket.on('updateMousePosPlayer1', ({x , y}) => {
+  //   // paddle1Y = y - PADDLE_HEIGHT / 2;
+  //   const currentPos = paddle1Y;
+  //   if (currentPos >= y) {
+  //     console.log('Should go up', );
+  //     paddle1Y -= 0.10;
+  //   } else if (currentPos <= y) {
+  //     console.log('Should go down');
+  //     //Bör kanske använda mig utav direction här snarare än att direkt ändra? 
+  //     // Och bara ändra tex var fjärde emit?
+  //     // Eller...Så kanske det snarae är clienten som bara skickar med 'updateDirection' när den borde? 
+  //     /
+  //     paddle1Y += 0.10;
+  //   } else {
+  //     console.log('Should stay');
+      
+  //   }
+  //   socket.emit('updatePlayer1Pos', paddle1Y)
+  // });
 
   socket.on('updateMousePosPlayer2', ({x , y}) => {
     paddle2Y = y - PADDLE_HEIGHT / 2;
@@ -57,7 +96,7 @@ io.on('connection', (socket) => {
     showingWinScreen = false;
     var fps = 30;
     var interval = setInterval(() => {
-      if (showingWinScreen) {
+      if (showingWinScreen) { 
         console.log('winning player: ', winningPlayer);
         io.emit('showingWinScreen', winningPlayer);
         player1Ready = false;
@@ -67,9 +106,7 @@ io.on('connection', (socket) => {
         clearInterval(interval);
       } else {
         moveEverything()
-        io.emit('updateBallPos', { x: ballX, y: ballY, p1score: player1score, p2score: player2score });
-        io.emit('updatePlayer1Pos', paddle1Y);
-        io.emit('updatePlayer2Pos', paddle2Y);
+       
       }
       
     }, 1000 / fps);
@@ -102,10 +139,7 @@ var canvas = {
   width: 800
 };
 
-function moveEverything() {
-
-  // computerMovement()
-
+function moveBall() {
   ballX += ballSpeedX;
   ballY += ballSpeedY;
 
@@ -116,7 +150,7 @@ function moveEverything() {
       var deltaY = ballY - (paddle1Y + PADDLE_HEIGHT / 2);
       ballSpeedY = deltaY * 0.35
     } else if (ballX < 0) {
-      player2score++;
+      // player2score++;
       ballReset();
     }  
   }
@@ -128,7 +162,7 @@ function moveEverything() {
       var deltaY = ballY - (paddle2Y + PADDLE_HEIGHT / 2);
       ballSpeedY = deltaY * 0.35
     } else if (ballX > canvas.width) {
-      player1score++;
+      // player1score++;
       ballReset();
     }  
   }
@@ -140,6 +174,26 @@ function moveEverything() {
   if (ballY > canvas.height) {
     ballSpeedY = -ballSpeedY;
   }
+}
+
+function movePaddle1() {
+  if (!pointToWherePaddleShouldGo) return;
+  if (pointToWherePaddleShouldGo + 20 < (paddle1Y + PADDLE_HEIGHT / 2)) {
+    paddle1Y -= 15;
+  } else if (pointToWherePaddleShouldGo -20 > (paddle1Y + PADDLE_HEIGHT / 2)) {
+    paddle1Y += 15;
+  }
+}
+
+function moveEverything() {
+
+  // computerMovement()
+  moveBall()
+  movePaddle1()
+  io.emit('updateBallPos', { x: ballX, y: ballY, p1score: player1score, p2score: player2score });
+  io.emit('updatePlayer1Pos', paddle1Y);
+  io.emit('updatePlayer2Pos', paddle2Y);
+  
 }
 
 function ballReset() {

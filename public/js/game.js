@@ -111,8 +111,11 @@ function calculateMousePos(e) {
 
 function handleMouseClick (e) {
   console.log('handleMouseClick');
-  if (showingWinScreen && !hasChosenPlayer) {
+  console.log(showingWinScreen, hasChosenPlayer);
+  
+  if (showingWinScreen && !hasChosenPlayer.length) {
     // socket.emit('startGame');
+    console.log('player1Join.x', player1Join.x)
     const targetPlayer1 = 
       (e.x > player1Join.x - 10 && e.x < player1Join.x + 100)
       && e.y > player1Join.y - 40 && e.y < player1Join.y + 40;
@@ -120,6 +123,8 @@ function handleMouseClick (e) {
     const targetPlayer2 = 
       (e.x > player2Join.x - 10 && e.x < player2Join.x + 100)
       && e.y > player2Join.y - 40 && e.y < player2Join.y + 40;
+    console.log(targetPlayer1, targetPlayer2);
+    console.log(e.x, e.y)
     if (targetPlayer1) {
       console.log('player1')
       // emit some 'player ready' - call
@@ -145,23 +150,48 @@ window.onload = function() {
   centerX = canvas.width / 2;
   player1Join.y = centerY;
   player2Join.y = centerY;
-
+  var player1Button = document.getElementById('player1Button');
+  var player2Button = document.getElementById('player2Button');
+  player1Button.onclick = () => {
+    socket.emit('playerReady', 'player1');
+    socket.emit('playerReady', 'player2'); // Just to skip click on player2btn while testing
+    hasChosenPlayer = 'player1';
+    player1Button.disabled = true;
+  }
+  player2Button.disabled = true;
+  player2Button.onclick = () => {
+    socket.emit('playerReady', 'player2');
+  }
   drawEverything();
-
+  var direction = 'up'; // direction of paddle
   canvas.addEventListener('mousedown', handleMouseClick);
   canvas.addEventListener('mousemove',
     function(e) {
       var mousePos = calculateMousePos(e);
-      // Skicka med vilken spelare jag styr (hasChosenPlayer)
-      // Server uppdaterar accordingly
-      // Alternativt köra en if-sats här
-      if (hasChosenPlayer === 'player1') {
-        socket.emit('updateMousePosPlayer1', mousePos);
-      } else if (hasChosenPlayer === 'player2') {
-        socket.emit('updateMousePosPlayer2', mousePos);
-      }
+      // y blir mindre ju högre upp man är. så 0 är i top.
+      // Men kommer ju alltid vara antingne över eller under. 
+      // Vill väl skicka emita när det har ändrats snarare väl?
+      // Så första gången skickar emit 'UPP'
+      // Sen om man har kvar muspekare ovanför rör sig paddle mot muspekaren
+      // Hamnar muspekare under emitas 'NER'.
+      // if (hasChosenPlayer === 'player1') {
+      //   if (mousePos.y <= paddle1Y && direction === 'down') {
+      //     direction = 'up';
+      //     // Should go up
+      //     console.log('Should go up');
+      //     socket.emit('updateMousePosPlayer1', mousePos);
+      //   } else if (mousePos.y >= paddle1Y && direction === 'up') {
+      //     direction = 'down'
+      //     // Should go down
+      //     console.log('Should go down');
+      //     socket.emit('updateMousePosPlayer1', mousePos);
+      //   }
+      //   // socket.emit('updateMousePosPlayer1', mousePos);
+      // } else if (hasChosenPlayer === 'player2') {
+      //   socket.emit('updateMousePosPlayer2', mousePos);
+      // }
       
-      // socket.emit('updateMousePosPlayer1', mousePos);
+      socket.emit('updateMousePosPlayer1', mousePos);
 
     });
 }
