@@ -1,3 +1,5 @@
+import io from 'socket.io-client';
+import { deparam } from './lib/deparam';
 
 var canvas;
 var canvasContext;
@@ -37,10 +39,43 @@ var joinText2 = ' Player2: click to join';
 
 var socket = io();
 
+let room = ''
+
 socket.on('connect', function () {
   console.log('Connected to server');
-  var params = deparam(window.location.search);
-  socket.emit('join', params, function (err) {
+  // var params = deparam(window.location.search); 
+  // Istället för att använda window.location.search, använd onSubmit och skicka med de värdena
+  // Men jag behöver ta mig från index till game.html. Om inte göra om så det är en sida. det kanske är enklast. 
+  // socket.emit('join', params, function (err) {
+  //   if (err) {
+  //     alert(err);
+  //     window.location.href = '/';
+  //   } else {
+  //     console.log('No error.');
+  //   }
+  // })
+});
+
+const form = document.getElementById('form');
+
+const onSubmit = (e) => {
+  e.preventDefault();
+  console.log('onSubmit')
+  joinRoom()
+}
+form.onsubmit = onSubmit;
+function joinRoom () {
+  console.log('joinRoom')
+  const name = document.getElementById('name').value;
+  const roomValue = document.getElementById('room').value; 
+  const param = {
+    name,
+    room: roomValue
+  };
+  room = roomValue
+  console.log('room: ', room);
+  console.log('param: ', param);
+  socket.emit('join', param, function (err) {
     if (err) {
       alert(err);
       window.location.href = '/';
@@ -48,7 +83,7 @@ socket.on('connect', function () {
       console.log('No error.');
     }
   })
-});
+}
 
 socket.on('disconnect', function () {
   console.log('Disconnected from server')
@@ -77,6 +112,16 @@ socket.on('updatePlayer2Pos', function (y) {
   paddle2Y = y ;
 });
 
+socket.on('updatePositions', (positions) => {
+  const { player1, ball } = positions
+  ballX = ball.x;
+  ballY = ball.y;
+  paddle1Y = player1.paddlePos.y;
+  console.log('game positions:', positions)
+  showingWinScreen = false;
+  drawEverything();
+})
+
 socket.on('showingWinScreen', function(newWinningPlayer) {
   console.log('show win screen')
   showingWinScreen = true;
@@ -97,6 +142,10 @@ socket.on('playerJoined', function(player) {
   drawEverything();
 });
 
+socket.on('renderGame', () => {
+  console.log('should renderGame');
+  startGame();
+});
 
 function calculateMousePos(e) {
   var rect = canvas.getBoundingClientRect();
@@ -110,38 +159,38 @@ function calculateMousePos(e) {
 }
 
 function handleMouseClick (e) {
-  console.log('handleMouseClick');
-  console.log(showingWinScreen, hasChosenPlayer);
+  // console.log('handleMouseClick');
+  // console.log(showingWinScreen, hasChosenPlayer);
   
-  if (showingWinScreen && !hasChosenPlayer.length) {
-    // socket.emit('startGame');
-    console.log('player1Join.x', player1Join.x)
-    const targetPlayer1 = 
-      (e.x > player1Join.x - 10 && e.x < player1Join.x + 100)
-      && e.y > player1Join.y - 40 && e.y < player1Join.y + 40;
+  // if (showingWinScreen && !hasChosenPlayer.length) {
+  //   // socket.emit('startGame');
+  //   console.log('player1Join.x', player1Join.x)
+  //   const targetPlayer1 = 
+  //     (e.x > player1Join.x - 10 && e.x < player1Join.x + 100)
+  //     && e.y > player1Join.y - 40 && e.y < player1Join.y + 40;
 
-    const targetPlayer2 = 
-      (e.x > player2Join.x - 10 && e.x < player2Join.x + 100)
-      && e.y > player2Join.y - 40 && e.y < player2Join.y + 40;
-    console.log(targetPlayer1, targetPlayer2);
-    console.log(e.x, e.y)
-    if (targetPlayer1) {
-      console.log('player1')
-      // emit some 'player ready' - call
-      hasChosenPlayer = 'player1';
-      socket.emit('playerReady', 'player1');
+  //   const targetPlayer2 = 
+  //     (e.x > player2Join.x - 10 && e.x < player2Join.x + 100)
+  //     && e.y > player2Join.y - 40 && e.y < player2Join.y + 40;
+  //   console.log(targetPlayer1, targetPlayer2);
+  //   console.log(e.x, e.y)
+  //   if (targetPlayer1) {
+  //     console.log('player1')
+  //     // emit some 'player ready' - call
+  //     hasChosenPlayer = 'player1';
+  //     socket.emit('playerReady', 'player1', room);
 
-    } else if (targetPlayer2) {
-      console.log('player2')
-      // emit some 'player ready' - call
-      hasChosenPlayer = 'player2';
-      socket.emit('playerReady', 'player2');
-    }
-  }
+  //   } else if (targetPlayer2) {
+  //     console.log('player2')
+  //     // emit some 'player ready' - call
+  //     hasChosenPlayer = 'player2';
+  //     socket.emit('playerReady', 'player2', room);
+  //   }
+  // }
 }
 
-window.onload = function() {
-  console.log('onload');
+function startGame () {
+  console.log('startGame');
   canvas = document.getElementById('gameCanvas');
   canvasContext = canvas.getContext('2d');
   player1Join.x = canvas.width / 2 - 200;
@@ -153,14 +202,14 @@ window.onload = function() {
   var player1Button = document.getElementById('player1Button');
   var player2Button = document.getElementById('player2Button');
   player1Button.onclick = () => {
-    socket.emit('playerReady', 'player1');
-    socket.emit('playerReady', 'player2'); // Just to skip click on player2btn while testing
+    socket.emit('playerReady', 'player1', room);
+    socket.emit('playerReady', 'player2', room); // Just to skip click on player2btn while testing
     hasChosenPlayer = 'player1';
     player1Button.disabled = true;
   }
   player2Button.disabled = true;
   player2Button.onclick = () => {
-    socket.emit('playerReady', 'player2');
+    socket.emit('playerReady', 'player2', room);
   }
   drawEverything();
   canvas.addEventListener('mousedown', handleMouseClick);

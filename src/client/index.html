@@ -9,22 +9,39 @@
   </head>
   <body class="centered-form">
     <div class="centered-form__form">
-      <form action="/game.html">
+      <form id='form'>
           <div class="form-field">
             <h3>Join a game</h3>
           </div>
           <div class="form-field">
             <label for="name">Display name</label>
-            <input type="text" name="name" autofocus />
+            <input type="text" id='name' autofocus />
           </div>
           <div class="form-field">
             <label for="room">Room name</label>
-            <input type="text" name="room" />
+            <input type="text" id='room' />
           </div>
           <div class="form-field">
-            <button>Join</button>
+            <button type="submit">Join</button>
           </div>
       </form>     
     </div>
+
+    <header>
+        <h1 >
+          Pong
+        </h1>
+      </header>
+      <div class="buttons">
+        <button id='player1Button'>Player 1 ready</button>
+        <button id='player2Button'>Player 2 ready</button>
+      </div>
+      <canvas 
+      id='gameCanvas'
+      width="800"
+      height="600"
+      tabindex="0"
+      >
+    </canvas>
   </body>
 </html>

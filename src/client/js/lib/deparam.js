@@ -14,3 +14,5 @@ function deparam (searchUri) {
 
   return params;
 }
+
+export { deparam };
