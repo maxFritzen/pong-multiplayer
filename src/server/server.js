@@ -44,20 +44,19 @@ const WINNING_SCORE = 3;
 var player1Ready = false;
 var player2Ready = false;
 var pointToWherePaddleShouldGo = 0; // Använd den här för att uppdatera paddle1
-// let room = ''; // Kan inte ha den här som en variabel här. Måste nog göra en klass Game. eller?  Vad hjälper det?
-// Behöver väl snarare hålla koll på room. HMMMMMM
 
-// göra ett object som håller alla rooms ball osv positioner ?
 
-const positions = {
+// Hold all variables here in state[room].
+const state = {
 
 }
 
+
 io.on('connection', (socket) => {
   console.log('New user connected');
-  player1Ready = false;
-  player2Ready = false;
-  showingWinScreen = true;
+  // player1Ready = false;
+  // player2Ready = false;
+  // showingWinScreen = true;
 
   socket.on('join', (params, callback) => {
     const room = params.room;
@@ -65,7 +64,7 @@ io.on('connection', (socket) => {
     socket.join(room, () => console.log('joined room', room));
     io.to(room).emit('renderGame');
     socket.broadcast.to(room).emit('newPlayerJoined');
-    positions[room] = {
+    state[room] = {
       ball: {
         x: 250,
         y: 250, 
@@ -76,46 +75,46 @@ io.on('connection', (socket) => {
         pointToWherePaddleShouldGo: 0,
         score: 0,
         ready: false,
-        paddlePos: {
-          x: 0,
-          y: 250
-        }
+        x: 0,
+        y: 250
       }, 
       player2: {
         pointToWherePaddleShouldGo: 0,
         score: 0,
         ready: false,
-        paddlePos: {
-          x: 0,
-          y: 250
-        }
-      }
+        x: 0,
+        y: 250
+      },
+      showingWinScreen: true,
+      winningPlayer: ''
     }
-    console.log(positions);
+    console.log(state);
   });
 
-  socket.on('updateMousePosPlayer1', ({y}) => {
-    pointToWherePaddleShouldGo = y;
-
+  socket.on('updateMousePosPlayer1', (room, { y }) => {
+    state[room].player1.pointToWherePaddleShouldGo = y;
   });
 
-  socket.on('updateMousePosPlayer2', ({x , y}) => {
-    paddle2Y = y - PADDLE_HEIGHT / 2;
-    socket.emit('updatePlayer2Pos', paddle2Y)
+  socket.on('updateMousePosPlayer2', (room, { y }) => {
+    state[room].player2.pointToWherePaddleShouldGo = y;
   });
 
   function startGame (room) {
     console.log('startGame server side', room)
-    showingWinScreen = false;
+    state[room].showingWinScreen = false;
     var fps = 30;
     var interval = setInterval(() => {
-      if (showingWinScreen) { 
-        console.log('winning player: ', winningPlayer);
-        io.to(room).emit('showingWinScreen', winningPlayer);
-        player1Ready = false;
-        player2Ready = false;
-        player1score = 0;
-        player2score = 0;
+      if (state[room].showingWinScreen) { 
+        console.log('winning player: ', state[room].winningPlayer);
+        io.to(room).emit('showingWinScreen', state[room].winningPlayer);
+        state[room].player1.ready = false;
+        state[room].player2.ready = false;
+        state[room].player1.score = 0;
+        state[room].player2.score = 0;
+        // player1Ready = false;
+        // player2Ready = false;
+        // player1score = 0;
+        // player2score = 0;
         clearInterval(interval);
       } else {
         moveEverything(room)
@@ -128,15 +127,15 @@ io.on('connection', (socket) => {
     console.log(player, room);
     if (player === 'player1') {
       console.log('player 1 ready in ', room);
-      player1Ready = true;
+      state[room].player1.ready = true;
       io.to(room).emit('playerJoined', player);
     } else if( player === 'player2') {
       console.log('player 2 ready');
-      player2Ready = true;
+      state[room].player2.ready = true;
       io.to(room).emit('playerJoined', player);
     }
 
-    if (player1Ready && player2Ready) {
+    if (state[room].player1.ready && state[room].player2.ready) {
       startGame(room);
     }
   });
@@ -149,41 +148,41 @@ var canvas = { // Skicka med det här i parameter nånstans istället.
 };
 
 function moveBall(room) {
-  positions[room].ball.x += positions[room].ball.speedX;
-  positions[room].ball.y += positions[room].ball.speedY;
-  console.log(positions[room].ball.x);
-  if (positions[room].ball.x < 0 + PADDLE_WIDTH + 10) {
-    if (positions[room].ball.y > positions[room].player1.paddlePos.y 
-      && positions[room].ball.y < positions[room].player1.paddlePos.y + PADDLE_HEIGHT) {
-      positions[room].ball.x = -positions[room].ball.x ;
+  state[room].ball.x += state[room].ball.speedX;
+  state[room].ball.y += state[room].ball.speedY;
+  console.log(state[room].ball.x);
+  if (state[room].ball.x < 0 + PADDLE_WIDTH + 10) {
+    if (state[room].ball.y > state[room].player1.y 
+      && state[room].ball.y < state[room].player1.y + PADDLE_HEIGHT) {
+      state[room].ball.speedX = -state[room].ball.speedX;
       
-      var deltaY = positions[room].ball.y - (positions[room].player1.paddlePos.y + PADDLE_HEIGHT / 2);
-      positions[room].ball.speedY = deltaY * 0.35
-    } else if (positions[room].ball.x < 0) {
+      var deltaY = state[room].ball.y - (state[room].player1.y + PADDLE_HEIGHT / 2);
+      state[room].ball.speedY = deltaY * 0.35
+    } else if (state[room].ball.x < 0) {
       // player2score++;
       ballReset(room);
     }  
   }
 
-  if (positions[room].ball.x > canvas.width - PADDLE_WIDTH - 10) {
-    if (positions[room].ball.y > positions[room].player2.paddlePos.y 
-      && positions[room].ball.y < positions[room].player2.paddlePos.y + PADDLE_HEIGHT) {
-      positions[room].ball.speedX = -positions[room].ball.speedX;
+  if (state[room].ball.x > canvas.width - PADDLE_WIDTH - 10) {
+    if (state[room].ball.y > state[room].player2.y 
+      && state[room].ball.y < state[room].player2.y + PADDLE_HEIGHT) {
+      state[room].ball.speedX = -state[room].ball.speedX;
 
-      var deltaY = positions[room].ball.y - (positions[room].player2.paddlePos.y + PADDLE_HEIGHT / 2);
-      positions[room].ball.speedY = deltaY * 0.35
-    } else if (positions[room].ball.x > canvas.width) {
+      var deltaY = state[room].ball.y - (state[room].player2.y + PADDLE_HEIGHT / 2);
+      state[room].ball.speedY = deltaY * 0.35
+    } else if (state[room].ball.x > canvas.width) {
       // player1score++;
       ballReset(room);
     }  
   }
 
-  if (positions[room].ball.y < 0) {
-    positions[room].ball.speedY = -positions[room].ball.speedY;
+  if (state[room].ball.y < 0) {
+    state[room].ball.speedY = -state[room].ball.speedY;
   }
 
-  if (positions[room].ball.y > canvas.height) {
-    positions[room].ball.speedY = -positions[room].ball.speedY;
+  if (state[room].ball.y > canvas.height) {
+    state[room].ball.speedY = -state[room].ball.speedY;
   }
 }
 // function moveBall() {
@@ -224,12 +223,16 @@ function moveBall(room) {
 // }
 
 function movePaddle1(room) {
-  if (!positions[room].player1.pointToWherePaddleShouldGo) return;
-  if (positions[room].player1.pointToWherePaddleShouldGo + 20 < (positions[room].player1.paddlePos.y + PADDLE_HEIGHT / 2)) {
-    positions[room].player1.paddlePos.y =- 15;
-  } else if (positions[room].player1.pointToWherePaddleShouldGo -20 > (positions[room].player1.paddlePos.y + PADDLE_HEIGHT / 2)) {
-    positions[room].player1.paddlePos.y =+ 15;
+  // if (!state[room].player1.pointToWherePaddleShouldGo) return;
+  const currentY = state[room].player1.y;
+  let newY = currentY;
+  const pointToWherePaddleShouldGo = state[room].player1.pointToWherePaddleShouldGo;
+  if (pointToWherePaddleShouldGo + 20 < (currentY + PADDLE_HEIGHT / 2)) {
+    newY -= 15;
+  } else if (pointToWherePaddleShouldGo -20 > (currentY + PADDLE_HEIGHT / 2)) {
+    newY += 15;
   }
+  state[room].player1.y = newY;
   // if (!pointToWherePaddleShouldGo) return;
   // if (pointToWherePaddleShouldGo + 20 < (paddle1Y + PADDLE_HEIGHT / 2)) {
   //   paddle1Y -= 15;
@@ -243,8 +246,8 @@ function moveEverything(room) {
   // computerMovement();
   moveBall(room);
   movePaddle1(room);
-  // Emit all positions
-  io.to(room).emit('updatePositions', positions[room]);
+  // Emit all state
+  io.to(room).emit('updateState', state[room]);
   // io.to(room).emit('updateBallPos', { x: ballX, y: ballY, p1score: player1score, p2score: player2score });
   // io.to(room).emit('updatePlayer1Pos', paddle1Y);
   // io.to(room).emit('updatePlayer2Pos', paddle2Y);
@@ -255,20 +258,21 @@ function moveEverything(room) {
 }
 
 function ballReset(room) {
-
+  const player1score = state[room].player1.score;
+  const player2score = state[room].player2.score;
   if (player1score >= WINNING_SCORE || player2score >= WINNING_SCORE){
-    showingWinScreen = true;
+    state[room].showingWinScreen = true;
     if (player1score > player2score) {
-      winningPlayer = 'PLAYER 1';
+      state[room].winningPlayer = 'PLAYER 1';
     } else {
-      winningPlayer = 'PLAYER 2';
+      state[room].winningPlayer = 'PLAYER 2';
     }
   }
-  console.log('ballreset: ', room, positions);
-  positions[room].ball.speedX =- positions[room].ball.speedX;
-  positions[room].ball.x = canvas.width / 2;
-  positions[room].ball.y = canvas.height / 2;
-  console.log('ballreset after reset: ', room, positions);
+  console.log('ballreset: ', room, state);
+  state[room].ball.speedX =- state[room].ball.speedX;
+  state[room].ball.x = canvas.width / 2;
+  state[room].ball.y = canvas.height / 2;
+  console.log('ballreset after reset: ', room, state);
   // if (player1score >= WINNING_SCORE || player2score >= WINNING_SCORE){
   //   showingWinScreen = true;
   //   if (player1score > player2score) {
@@ -283,11 +287,12 @@ function ballReset(room) {
   // ballY = canvas.height / 2;
 }
 function computerMovement() {
-  var paddle2YCenter = paddle2Y + (PADDLE_HEIGHT / 2);
-  // paddle2Y = ballY - 50;
-  if (paddle2YCenter < ballY - 35) {
-    paddle2Y += 10;
-  } else if (paddle2YCenter > ballY + 35){
-    paddle2Y -= 10;
-  }
+  // 
+  // var paddle2YCenter = paddle2Y + (PADDLE_HEIGHT / 2);
+  // // paddle2Y = ballY - 50;
+  // if (paddle2YCenter < ballY - 35) {
+  //   paddle2Y += 10;
+  // } else if (paddle2YCenter > ballY + 35){
+  //   paddle2Y -= 10;
+  // }
 }

@@ -41,6 +41,10 @@ var socket = io();
 
 let room = ''
 
+let state = {
+
+}
+
 socket.on('connect', function () {
   console.log('Connected to server');
   // var params = deparam(window.location.search); 
@@ -94,30 +98,31 @@ socket.on('newPlayerJoined', function () {
 });
 
 
-socket.on('updateBallPos', function ({x, y, p1score, p2score}) {
-  // Update ball pos
-  ballX = x;
-  ballY = y;
-  player1score = p1score;
-  player2score = p2score;
-  showingWinScreen = false;
-  drawEverything();
-});
+// socket.on('updateBallPos', function ({x, y, p1score, p2score}) {
+//   // Update ball pos
+//   ballX = x;
+//   ballY = y;
+//   player1score = p1score;
+//   player2score = p2score;
+//   showingWinScreen = false;
+//   drawEverything(showingWinScreen, winningPlayer);
+// });
 
-socket.on('updatePlayer1Pos', function (y) {
-  paddle1Y = y ;
-});
+// socket.on('updatePlayer1Pos', function (y) {
+//   paddle1Y = y ;
+// });
 
-socket.on('updatePlayer2Pos', function (y) {
-  paddle2Y = y ;
-});
+// socket.on('updatePlayer2Pos', function (y) {
+//   paddle2Y = y ;
+// });
 
-socket.on('updatePositions', (positions) => {
-  const { player1, ball } = positions
+socket.on('updateState', (state) => {
+  const { player1, ball } = state
   ballX = ball.x;
   ballY = ball.y;
-  paddle1Y = player1.paddlePos.y;
-  console.log('game positions:', positions)
+  paddle1Y = player1.y;
+  console.log('game state:', state);
+  console.log('paddle1Y:', paddle1Y);
   showingWinScreen = false;
   drawEverything();
 })
@@ -129,7 +134,7 @@ socket.on('showingWinScreen', function(newWinningPlayer) {
   joinText1 = ' Player1: click to join';
   joinText2 = ' Player2: click to join';
   winningPlayer = newWinningPlayer;
-  drawEverything();
+  drawEverything(true, winningPlayer);
 });
 
 socket.on('playerJoined', function(player) {
@@ -158,37 +163,6 @@ function calculateMousePos(e) {
   }
 }
 
-function handleMouseClick (e) {
-  // console.log('handleMouseClick');
-  // console.log(showingWinScreen, hasChosenPlayer);
-  
-  // if (showingWinScreen && !hasChosenPlayer.length) {
-  //   // socket.emit('startGame');
-  //   console.log('player1Join.x', player1Join.x)
-  //   const targetPlayer1 = 
-  //     (e.x > player1Join.x - 10 && e.x < player1Join.x + 100)
-  //     && e.y > player1Join.y - 40 && e.y < player1Join.y + 40;
-
-  //   const targetPlayer2 = 
-  //     (e.x > player2Join.x - 10 && e.x < player2Join.x + 100)
-  //     && e.y > player2Join.y - 40 && e.y < player2Join.y + 40;
-  //   console.log(targetPlayer1, targetPlayer2);
-  //   console.log(e.x, e.y)
-  //   if (targetPlayer1) {
-  //     console.log('player1')
-  //     // emit some 'player ready' - call
-  //     hasChosenPlayer = 'player1';
-  //     socket.emit('playerReady', 'player1', room);
-
-  //   } else if (targetPlayer2) {
-  //     console.log('player2')
-  //     // emit some 'player ready' - call
-  //     hasChosenPlayer = 'player2';
-  //     socket.emit('playerReady', 'player2', room);
-  //   }
-  // }
-}
-
 function startGame () {
   console.log('startGame');
   canvas = document.getElementById('gameCanvas');
@@ -211,12 +185,11 @@ function startGame () {
   player2Button.onclick = () => {
     socket.emit('playerReady', 'player2', room);
   }
-  drawEverything();
-  canvas.addEventListener('mousedown', handleMouseClick);
+  drawEverything(false, '');
   canvas.addEventListener('mousemove',
     function(e) {
       var mousePos = calculateMousePos(e);
-      socket.emit('updateMousePosPlayer1', mousePos);
+      socket.emit('updateMousePosPlayer1', room, mousePos);
     });
 }
 
@@ -235,7 +208,7 @@ function drawNet() {
   }
 }
 
-function drawEverything() {
+function drawEverything(showingWinScreen, winningPlayer) {
 
   colorRect(0, 0, canvas.width, canvas.height, 'black');
 
