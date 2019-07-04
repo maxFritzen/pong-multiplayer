@@ -28,11 +28,21 @@ var io = socketIO(server);
 const PADDLE_HEIGHT = 100;
 const PADDLE_WIDTH = 10;
 const WINNING_SCORE = 3;
+const originalBall = {
+  x: 250,
+  y: 250, 
+  speedX: 1,
+  speedY: 0.8
+}
 
 
 // Hold all variables here in state[room].
 const state = {
   
+}
+
+const getConnectedPlayers = (room) => {
+  return Object.keys(io.sockets.adapter.rooms[room].sockets);
 }
 
 io.on('connection', (socket) => {
@@ -47,10 +57,7 @@ io.on('connection', (socket) => {
     const currentPlayers = state[room] ? state[room].players : []
     state[room] = {
       ball: {
-        x: 250,
-        y: 250, 
-        speedX: 10,
-        speedY: 8
+        ...originalBall
       },
       player1: {
         pointToWherePaddleShouldGo: 0,
@@ -69,12 +76,9 @@ io.on('connection', (socket) => {
       showingWinScreen: true,
       winningPlayer: '',
       players: [ ...currentPlayers, socket.id],
-      connectedSockets: Object.keys(io.sockets.adapter.rooms[room].sockets)
+      connectedSockets: getConnectedPlayers(room)
     }
-    console.log(state);
-    console.log('socketId: ', socket.id);
-    console.log('io.sockets.adapter.rooms[room]):', io.sockets.adapter.rooms[room].sockets);
-    const socketsInRoom = Object.keys(io.sockets.adapter.rooms[room].sockets);
+    const socketsInRoom = getConnectedPlayers(room);
     console.log('socketsInRoom: ', socketsInRoom)
     // io.sockets.adapter.rooms[roomId].Room.sockets === sockets: { socketID: true (eller false antar jag)}
 
@@ -89,10 +93,13 @@ io.on('connection', (socket) => {
   });
 
   function startGame (room) {
-    console.log('startGame server side', room)
+    console.log('startGame server side', room);
+    console.log('startGame state:', state[room]);
     state[room].showingWinScreen = false;
-    var fps = 30;
-    var interval = setInterval(() => {
+    // state[room].ball = originalBall;
+    ballReset(room);
+    const fps = 30;
+    const interval = setInterval(function() {
       if (!io.sockets.adapter.rooms[room]) {
         console.log('means no one is in this room. Delete room');
         delete state[room];
@@ -113,12 +120,16 @@ io.on('connection', (socket) => {
         clearInterval(interval);
       } else {
         const { players } = state[room];
-        const connectedSockets =  Object.keys(io.sockets.adapter.rooms[room].sockets)
+        const connectedSockets = getConnectedPlayers(room);
         if (players.length !== connectedSockets.length) {
           console.log('Not same length of players and connectedSockets', players, connectedSockets);
+          someoneDisonnected(room);
           clearInterval(interval);
+          console.log('should ble cleared : ', interval)
+        } else {
+          moveEverything(room)
         }
-        moveEverything(room)
+        
       }
       
     }, 1000 / fps);
@@ -129,6 +140,7 @@ io.on('connection', (socket) => {
     if (player === 'player1') {
       console.log('player 1 ready in ', room);
       state[room].player1.ready = true;
+      state[room].player2.ready = true;
       io.to(room).emit('playerJoined', player);
     } else if( player === 'player2') {
       console.log('player 2 ready');
@@ -143,6 +155,15 @@ io.on('connection', (socket) => {
 
 });
 
+function someoneDisonnected (room) {
+  // Vad ska hända då? Får gå tillbaka till 'waiting for players' som för övrigt inte finns. Men ah, starta om från att behöva klicka 'ready'
+  console.log('someoneDiscconected');
+  state[room].players = getConnectedPlayers(room);
+  console.log(state[room].players)
+  console.log(getConnectedPlayers(room))
+  io.to(room).emit('playerDisconnected');
+  io.to(room).emit('showingWinScreen', state[room].winningPlayer);
+}
 var canvas = { // Skicka med det här i parameter nånstans istället.
   height: 600,
   width: 800
@@ -223,11 +244,11 @@ function ballReset(room) {
       state[room].winningPlayer = 'PLAYER 2';
     }
   }
-  console.log('ballreset: ', room, state);
-  state[room].ball.speedX =- state[room].ball.speedX;
+  // console.log('ballreset: ', room, state);
+  state[room].ball.speedX = -state[room].ball.speedX;
   state[room].ball.x = canvas.width / 2;
   state[room].ball.y = canvas.height / 2;
-  console.log('ballreset after reset: ', room, state);
+  // console.log('ballreset after reset: ', room, state);
 }
 function computerMovement() {
   // 

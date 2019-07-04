@@ -81,6 +81,11 @@ function joinRoom () {
   })
 }
 
+socket.on('playerDisconnected', () => {
+  // Should reset everything i guess.Go back to 'click when ready'
+  console.log('playerDisconnected');
+})
+
 socket.on('disconnect', function () {
   console.log('Disconnected from server')
 });
@@ -151,7 +156,6 @@ function startGame () {
 
   player1Button.onclick = () => {
     socket.emit('playerReady', 'player1', room);
-    socket.emit('playerReady', 'player2', room); // Just to skip click on player2btn while testing
     hasChosenPlayer = 'player1';
     player1Button.disabled = true;
   }
