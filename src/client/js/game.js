@@ -98,32 +98,14 @@ socket.on('newPlayerJoined', function () {
 });
 
 
-// socket.on('updateBallPos', function ({x, y, p1score, p2score}) {
-//   // Update ball pos
-//   ballX = x;
-//   ballY = y;
-//   player1score = p1score;
-//   player2score = p2score;
-//   showingWinScreen = false;
-//   drawEverything(showingWinScreen, winningPlayer);
-// });
-
-// socket.on('updatePlayer1Pos', function (y) {
-//   paddle1Y = y ;
-// });
-
-// socket.on('updatePlayer2Pos', function (y) {
-//   paddle2Y = y ;
-// });
-
 socket.on('updateState', (state) => {
-  const { player1, ball } = state
+  const { player1, player2, ball } = state
   ballX = ball.x;
   ballY = ball.y;
   paddle1Y = player1.y;
-  console.log('game state:', state);
-  console.log('paddle1Y:', paddle1Y);
   showingWinScreen = false;
+  player1score = player1.score;
+  player2score = player2.score;
   drawEverything();
 })
 

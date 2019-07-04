@@ -25,25 +25,9 @@ const server = app.listen(port);
 console.log(`Server listening on port ${port}`);
 var io = socketIO(server);
 
-var ballX = 250;
-var ballY = 250;
-var ballSpeedX = 10;
-var ballSpeedY = 8;
-
-var paddle1Y = 250;
-var paddle2Y = 250;
 const PADDLE_HEIGHT = 100;
 const PADDLE_WIDTH = 10;
-
-var showingWinScreen = false;
-var winningPlayer;
-var player1score = 0;
-var player2score = 0;
 const WINNING_SCORE = 3;
-
-var player1Ready = false;
-var player2Ready = false;
-var pointToWherePaddleShouldGo = 0; // Använd den här för att uppdatera paddle1
 
 
 // Hold all variables here in state[room].
@@ -54,9 +38,6 @@ const state = {
 
 io.on('connection', (socket) => {
   console.log('New user connected');
-  // player1Ready = false;
-  // player2Ready = false;
-  // showingWinScreen = true;
 
   socket.on('join', (params, callback) => {
     const room = params.room;
@@ -150,77 +131,42 @@ var canvas = { // Skicka med det här i parameter nånstans istället.
 function moveBall(room) {
   state[room].ball.x += state[room].ball.speedX;
   state[room].ball.y += state[room].ball.speedY;
-  console.log(state[room].ball.x);
-  if (state[room].ball.x < 0 + PADDLE_WIDTH + 10) {
-    if (state[room].ball.y > state[room].player1.y 
-      && state[room].ball.y < state[room].player1.y + PADDLE_HEIGHT) {
-      state[room].ball.speedX = -state[room].ball.speedX;
+  const { player1, player2, ball } = state[room];
+  // console.log(state[room].ball.x);
+  if (ball.x < 0 + PADDLE_WIDTH + 10) {
+    if (ball.y > player1.y 
+      && ball.y < player1.y + PADDLE_HEIGHT) {
+      state[room].ball.speedX = -ball.speedX; // change direction
       
-      var deltaY = state[room].ball.y - (state[room].player1.y + PADDLE_HEIGHT / 2);
+      var deltaY = ball.y - (player1.y + PADDLE_HEIGHT / 2);
       state[room].ball.speedY = deltaY * 0.35
-    } else if (state[room].ball.x < 0) {
-      // player2score++;
+    } else if (ball.x < 0) {
+      state[room].player2.score++;
       ballReset(room);
     }  
   }
 
-  if (state[room].ball.x > canvas.width - PADDLE_WIDTH - 10) {
-    if (state[room].ball.y > state[room].player2.y 
-      && state[room].ball.y < state[room].player2.y + PADDLE_HEIGHT) {
-      state[room].ball.speedX = -state[room].ball.speedX;
+  if (ball.x > canvas.width - PADDLE_WIDTH - 10) {
+    if (ball.y > player2.y 
+      && ball.y < player2.y + PADDLE_HEIGHT) {
+      state[room].ball.speedX = -ball.speedX;
 
-      var deltaY = state[room].ball.y - (state[room].player2.y + PADDLE_HEIGHT / 2);
+      var deltaY = ball.y - (player2.y + PADDLE_HEIGHT / 2);
       state[room].ball.speedY = deltaY * 0.35
-    } else if (state[room].ball.x > canvas.width) {
-      // player1score++;
+    } else if (ball.x > canvas.width) {
+      state[room].player1.score++;
       ballReset(room);
     }  
   }
 
-  if (state[room].ball.y < 0) {
-    state[room].ball.speedY = -state[room].ball.speedY;
+  if (ball.y < 0) {
+    state[room].ball.speedY = -ball.speedY;
   }
 
-  if (state[room].ball.y > canvas.height) {
-    state[room].ball.speedY = -state[room].ball.speedY;
+  if (ball.y > canvas.height) {
+    state[room].ball.speedY = -ball.speedY;
   }
 }
-// function moveBall() {
-//   ballX += ballSpeedX;
-//   ballY += ballSpeedY;
-
-//   if (ballX < 0 + PADDLE_WIDTH + 10) {
-//     if (ballY > paddle1Y && ballY < paddle1Y + PADDLE_HEIGHT) {
-//       ballSpeedX = -ballSpeedX;
-      
-//       var deltaY = ballY - (paddle1Y + PADDLE_HEIGHT / 2);
-//       ballSpeedY = deltaY * 0.35
-//     } else if (ballX < 0) {
-//       // player2score++;
-//       ballReset();
-//     }  
-//   }
-
-//   if (ballX > canvas.width - PADDLE_WIDTH - 10) {
-//     if (ballY > paddle2Y && ballY < paddle2Y + PADDLE_HEIGHT) {
-//       ballSpeedX = -ballSpeedX;
-
-//       var deltaY = ballY - (paddle2Y + PADDLE_HEIGHT / 2);
-//       ballSpeedY = deltaY * 0.35
-//     } else if (ballX > canvas.width) {
-//       // player1score++;
-//       ballReset();
-//     }  
-//   }
-
-//   if (ballY < 0) {
-//     ballSpeedY = -ballSpeedY;
-//   }
-
-//   if (ballY > canvas.height) {
-//     ballSpeedY = -ballSpeedY;
-//   }
-// }
 
 function movePaddle1(room) {
   // if (!state[room].player1.pointToWherePaddleShouldGo) return;
@@ -233,12 +179,7 @@ function movePaddle1(room) {
     newY += 15;
   }
   state[room].player1.y = newY;
-  // if (!pointToWherePaddleShouldGo) return;
-  // if (pointToWherePaddleShouldGo + 20 < (paddle1Y + PADDLE_HEIGHT / 2)) {
-  //   paddle1Y -= 15;
-  // } else if (pointToWherePaddleShouldGo -20 > (paddle1Y + PADDLE_HEIGHT / 2)) {
-  //   paddle1Y += 15;
-  // }
+
 }
 
 function moveEverything(room) {
@@ -248,12 +189,6 @@ function moveEverything(room) {
   movePaddle1(room);
   // Emit all state
   io.to(room).emit('updateState', state[room]);
-  // io.to(room).emit('updateBallPos', { x: ballX, y: ballY, p1score: player1score, p2score: player2score });
-  // io.to(room).emit('updatePlayer1Pos', paddle1Y);
-  // io.to(room).emit('updatePlayer2Pos', paddle2Y);
-  // io.to(room).emit('updateBallPos', { x: ballX, y: ballY, p1score: player1score, p2score: player2score });
-  // io.to(room).emit('updatePlayer1Pos', paddle1Y);
-  // io.to(room).emit('updatePlayer2Pos', paddle2Y);
   
 }
 
