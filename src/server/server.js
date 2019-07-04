@@ -32,9 +32,8 @@ const WINNING_SCORE = 3;
 
 // Hold all variables here in state[room].
 const state = {
-
+  
 }
-
 
 io.on('connection', (socket) => {
   console.log('New user connected');
@@ -45,6 +44,7 @@ io.on('connection', (socket) => {
     socket.join(room, () => console.log('joined room', room));
     io.to(room).emit('renderGame');
     socket.broadcast.to(room).emit('newPlayerJoined');
+    const currentPlayers = state[room] ? state[room].players : []
     state[room] = {
       ball: {
         x: 250,
@@ -67,9 +67,17 @@ io.on('connection', (socket) => {
         y: 250
       },
       showingWinScreen: true,
-      winningPlayer: ''
+      winningPlayer: '',
+      players: [ ...currentPlayers, socket.id],
+      connectedSockets: Object.keys(io.sockets.adapter.rooms[room].sockets)
     }
     console.log(state);
+    console.log('socketId: ', socket.id);
+    console.log('io.sockets.adapter.rooms[room]):', io.sockets.adapter.rooms[room].sockets);
+    const socketsInRoom = Object.keys(io.sockets.adapter.rooms[room].sockets);
+    console.log('socketsInRoom: ', socketsInRoom)
+    // io.sockets.adapter.rooms[roomId].Room.sockets === sockets: { socketID: true (eller false antar jag)}
+
   });
 
   socket.on('updateMousePosPlayer1', (room, { y }) => {
@@ -85,6 +93,12 @@ io.on('connection', (socket) => {
     state[room].showingWinScreen = false;
     var fps = 30;
     var interval = setInterval(() => {
+      if (!io.sockets.adapter.rooms[room]) {
+        console.log('means no one is in this room. Delete room');
+        delete state[room];
+        clearInterval(interval);
+      }
+
       if (state[room].showingWinScreen) { 
         console.log('winning player: ', state[room].winningPlayer);
         io.to(room).emit('showingWinScreen', state[room].winningPlayer);
@@ -98,6 +112,12 @@ io.on('connection', (socket) => {
         // player2score = 0;
         clearInterval(interval);
       } else {
+        const { players } = state[room];
+        const connectedSockets =  Object.keys(io.sockets.adapter.rooms[room].sockets)
+        if (players.length !== connectedSockets.length) {
+          console.log('Not same length of players and connectedSockets', players, connectedSockets);
+          clearInterval(interval);
+        }
         moveEverything(room)
       }
       
@@ -208,18 +228,6 @@ function ballReset(room) {
   state[room].ball.x = canvas.width / 2;
   state[room].ball.y = canvas.height / 2;
   console.log('ballreset after reset: ', room, state);
-  // if (player1score >= WINNING_SCORE || player2score >= WINNING_SCORE){
-  //   showingWinScreen = true;
-  //   if (player1score > player2score) {
-  //     winningPlayer = 'PLAYER 1';
-  //   } else {
-  //     winningPlayer = 'PLAYER 2';
-  //   }
-  // }
-
-  // ballSpeedX = -ballSpeedX
-  // ballX = canvas.width / 2;
-  // ballY = canvas.height / 2;
 }
 function computerMovement() {
   // 

@@ -47,20 +47,12 @@ let state = {
 
 socket.on('connect', function () {
   console.log('Connected to server');
-  // var params = deparam(window.location.search); 
-  // Istället för att använda window.location.search, använd onSubmit och skicka med de värdena
-  // Men jag behöver ta mig från index till game.html. Om inte göra om så det är en sida. det kanske är enklast. 
-  // socket.emit('join', params, function (err) {
-  //   if (err) {
-  //     alert(err);
-  //     window.location.href = '/';
-  //   } else {
-  //     console.log('No error.');
-  //   }
-  // })
 });
 
 const form = document.getElementById('form');
+
+const player1Button = document.getElementById('player1Button');
+const player2Button = document.getElementById('player2Button');
 
 const onSubmit = (e) => {
   e.preventDefault();
@@ -111,6 +103,7 @@ socket.on('updateState', (state) => {
 
 socket.on('showingWinScreen', function(newWinningPlayer) {
   console.log('show win screen')
+  player1Button.disabled = false;
   showingWinScreen = true;
   hasChosenPlayer = '';
   joinText1 = ' Player1: click to join';
@@ -155,8 +148,7 @@ function startGame () {
   centerX = canvas.width / 2;
   player1Join.y = centerY;
   player2Join.y = centerY;
-  var player1Button = document.getElementById('player1Button');
-  var player2Button = document.getElementById('player2Button');
+
   player1Button.onclick = () => {
     socket.emit('playerReady', 'player1', room);
     socket.emit('playerReady', 'player2', room); // Just to skip click on player2btn while testing
@@ -173,15 +165,6 @@ function startGame () {
       var mousePos = calculateMousePos(e);
       socket.emit('updateMousePosPlayer1', room, mousePos);
     });
-}
-
-function computerMovement() {
-  var paddle2YCenter = paddle2Y + (PADDLE_HEIGHT / 2);
-  if (paddle2YCenter < ballY - 35) {
-    paddle2Y += 10;
-  } else if (paddle2YCenter > ballY + 35){
-    paddle2Y -= 10;
-  }
 }
 
 function drawNet() {
