@@ -31,8 +31,8 @@ const WINNING_SCORE = 3;
 const originalBall = {
   x: 250,
   y: 250, 
-  speedX: 1,
-  speedY: 0.8
+  speedX: 20,
+  speedY: 15
 }
 
 
@@ -104,6 +104,7 @@ io.on('connection', (socket) => {
         console.log('means no one is in this room. Delete room');
         delete state[room];
         clearInterval(interval);
+        return;
       }
 
       if (state[room].showingWinScreen) { 
@@ -125,7 +126,7 @@ io.on('connection', (socket) => {
           console.log('Not same length of players and connectedSockets', players, connectedSockets);
           someoneDisonnected(room);
           clearInterval(interval);
-          console.log('should ble cleared : ', interval)
+          return;
         } else {
           moveEverything(room)
         }

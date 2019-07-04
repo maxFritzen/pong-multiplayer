@@ -1,8 +1,8 @@
 import io from 'socket.io-client';
 import { deparam } from './lib/deparam';
 
-var canvas;
-var canvasContext;
+// var canvas;
+// var canvasContext;
 var ballX = 50;
 var ballY = 50;
 var ballSpeedX = 10;
@@ -41,18 +41,36 @@ var socket = io();
 
 let room = ''
 
-let state = {
-
-}
 
 socket.on('connect', function () {
   console.log('Connected to server');
 });
 
 const form = document.getElementById('form');
-
 const player1Button = document.getElementById('player1Button');
 const player2Button = document.getElementById('player2Button');
+const joinRoomView = document.getElementById('joinRoomView');
+const winView = document.getElementById('winView');
+const gameView = document.getElementById('gameView');
+const canvas = document.getElementById('gameCanvas');
+const canvasContext = canvas.getContext('2d');
+
+const changeView = (view) => {
+  console.log('should change view to', view)
+  if (view === 'gameView') {
+    gameView.classList.remove('hidden');
+    canvas.classList.remove('hidden');
+    winView.classList.add('hidden');
+    joinRoomView.classList.add('hidden');
+  } else if (view === 'joinView') {
+    joinRoomView.classList.remove('hidden');
+    gameView.classList.add('hidden');
+  } else if(view === 'winView') {
+    winView.classList.remove('hidden');
+    canvas.classList.add('hidden');
+
+  }
+}
 
 const onSubmit = (e) => {
   e.preventDefault();
@@ -71,6 +89,7 @@ function joinRoom () {
   room = roomValue
   console.log('room: ', room);
   console.log('param: ', param);
+  changeView('gameView');
   socket.emit('join', param, function (err) {
     if (err) {
       alert(err);
@@ -88,6 +107,7 @@ socket.on('playerDisconnected', () => {
 
 socket.on('disconnect', function () {
   console.log('Disconnected from server')
+  changeView('joinView');
 });
 
 socket.on('newPlayerJoined', function () {
@@ -114,7 +134,8 @@ socket.on('showingWinScreen', function(newWinningPlayer) {
   joinText1 = ' Player1: click to join';
   joinText2 = ' Player2: click to join';
   winningPlayer = newWinningPlayer;
-  drawEverything(true, winningPlayer);
+  changeView('winView'); // Byt ut canvas mot andra element
+  // drawEverything(true, winningPlayer);
 });
 
 socket.on('playerJoined', function(player) {
@@ -124,11 +145,13 @@ socket.on('playerJoined', function(player) {
   } else if (player === 'player2'){
     joinText2 = 'Player2: Ready';
   }
+  changeView('gameView');
   drawEverything();
 });
 
 socket.on('renderGame', () => {
   console.log('should renderGame');
+  changeView('gameView');
   startGame();
 });
 
@@ -145,8 +168,8 @@ function calculateMousePos(e) {
 
 function startGame () {
   console.log('startGame');
-  canvas = document.getElementById('gameCanvas');
-  canvasContext = canvas.getContext('2d');
+  // canvas = document.getElementById('gameCanvas');
+  // canvasContext = canvas.getContext('2d');
   player1Join.x = canvas.width / 2 - 200;
   player2Join.x = canvas.width / 2 + 200;
   centerY = canvas.height / 2 - 25;
@@ -167,7 +190,10 @@ function startGame () {
   canvas.addEventListener('mousemove',
     function(e) {
       var mousePos = calculateMousePos(e);
-      socket.emit('updateMousePosPlayer1', room, mousePos);
+      if (room) {
+        socket.emit('updateMousePosPlayer1', room, mousePos);
+      }
+      
     });
 }
 
@@ -182,13 +208,13 @@ function drawEverything(showingWinScreen, winningPlayer) {
   colorRect(0, 0, canvas.width, canvas.height, 'black');
 
   if (showingWinScreen) {
-    canvasContext.fillStyle = 'white';
+    // canvasContext.fillStyle = 'white';
     
-    canvasContext.fillText( `${winningPlayer} won!`, centerX, centerY);
+    // canvasContext.fillText( `${winningPlayer} won!`, centerX, centerY);
     console.log('winning player: ', winningPlayer)
-    canvasContext.fillText('Click to continue', centerX-5, centerY + 25);
-    canvasContext.fillText(joinText1, player1Join.x, player1Join.y);
-    canvasContext.fillText(joinText2, player2Join.x, player2Join.y);
+    // canvasContext.fillText('Click to continue', centerX-5, centerY + 25);
+    // canvasContext.fillText(joinText1, player1Join.x, player1Join.y);
+    // canvasContext.fillText(joinText2, player2Join.x, player2Join.y);
     return;
   }
 

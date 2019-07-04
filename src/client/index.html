@@ -5,10 +5,39 @@
     <title>Pong Multiplayer</title>
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
     <link rel="stylesheet" href="css/styles.css">
-    
+    <style>
+        body {
+          background: black;
+          text-align: center;
+          color: lightgray;
+        }
+  
+        header {
+          border:1px solid black;
+          padding: 16px;
+        }
+  
+        h1 {
+          font-weight: 700;
+          font-size: 24px;
+          text-transform: uppercase;
+        }
+        .buttons {
+          display: flex;
+          justify-content: center;
+        }
+        .hidden {
+          display: none;
+        }
+      </style>
   </head>
-  <body class="centered-form">
-    <div class="centered-form__form">
+  <body class="">
+    <header>
+        <h1 >
+          Pong
+        </h1>
+      </header>
+    <div class="" id='joinRoomView'>
       <form id='form'>
           <div class="form-field">
             <h3>Join a game</h3>
@@ -27,21 +56,23 @@
       </form>     
     </div>
 
-    <header>
-        <h1 >
-          Pong
-        </h1>
-      </header>
+    <div id="gameView" class='hidden'>
       <div class="buttons">
         <button id='player1Button'>Player 1 ready</button>
         <button id='player2Button'>Player 2 ready</button>
       </div>
       <canvas 
-      id='gameCanvas'
-      width="800"
-      height="600"
-      tabindex="0"
+        id='gameCanvas'
+        width="800"
+        height="600"
+        tabindex="0"
       >
     </canvas>
+    <div id="winView" class='hidden'>
+        Somebody won yay
+      </div>
+  </div>
+
+  
   </body>
 </html>
