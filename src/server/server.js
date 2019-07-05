@@ -35,10 +35,35 @@ const originalBall = {
   speedY: 15
 }
 
+const PLAYER = {
+  name: '',
+  id: '',
+  pointToWherePaddleShouldGo: 0,
+  score: 0,
+  ready: false,
+  x: 0,
+  y: 250
+}
 
 // Hold all variables here in state[room].
 const state = {
-  
+
+}
+
+const originalRoom = {
+  ball: {
+    ...originalBall
+  },
+  player1: {
+    ...PLAYER 
+  }, 
+  player2: {
+    ...PLAYER
+  },
+  showingWinScreen: true,
+  winningPlayer: '',
+  players: [],
+  connectedSockets: []
 }
 
 const getConnectedPlayers = (room) => {
@@ -49,39 +74,66 @@ io.on('connection', (socket) => {
   console.log('New user connected');
 
   socket.on('join', (params, callback) => {
-    const room = params.room;
+    const { name, room } = params;
     console.log('player joined room', room);
     socket.join(room, () => console.log('joined room', room));
     io.to(room).emit('renderGame');
     socket.broadcast.to(room).emit('newPlayerJoined');
     const currentPlayers = state[room] ? state[room].players : []
-    state[room] = {
-      ball: {
-        ...originalBall
-      },
-      player1: {
-        pointToWherePaddleShouldGo: 0,
-        score: 0,
-        ready: false,
-        x: 0,
-        y: 250
-      }, 
-      player2: {
-        pointToWherePaddleShouldGo: 0,
-        score: 0,
-        ready: false,
-        x: 0,
-        y: 250
-      },
-      showingWinScreen: true,
-      winningPlayer: '',
-      players: [ ...currentPlayers, socket.id],
-      connectedSockets: getConnectedPlayers(room)
-    }
+    const currentStateRoom = state[room] ? state[room] : originalRoom;
     const socketsInRoom = getConnectedPlayers(room);
-    console.log('socketsInRoom: ', socketsInRoom)
-    // io.sockets.adapter.rooms[roomId].Room.sockets === sockets: { socketID: true (eller false antar jag)}
 
+    state[room] = {
+      ...currentStateRoom,
+      players: [ ...currentPlayers, socket.id ],
+      connectedSockets: socketsInRoom
+    }
+    
+    console.log('socketsInRoom: ', socketsInRoom)
+    
+    const newPlayer = {
+      player: '', // 1 or 2
+      id: '' // socket.id
+    };
+    // Is the new player player1, 2 or nothing?
+    const player1Id = state[room].player1.id;
+    const player2Id = state[room].player2.id;
+    if (!socketsInRoom.includes(player1Id)) {
+      // player1 has left
+      delete state[room].player1;
+      console.log('delete player 1');
+    } else if (!socketsInRoom.includes(player2Id)) {
+      // This means player2 has left
+      delete state[room].player2;
+    }
+    if (!state[room].player1) {
+      console.log('No player 1, add player 1');
+      state[room] = {
+        ...state[room],
+        player1: {
+          ...PLAYER,
+          name: name,
+          id: socket.id
+        }
+      };
+      newPlayer.player = 'player1';
+    } else if (!state[room].player2) {
+      console.log('there is a player 1 but No player 2, add player 2')
+      state[room] = {
+        ...state[room],
+        player2: {
+          ...PLAYER,
+          name: name,
+          id: socket.id
+        }
+      };
+      newPlayer.player = 'player2';
+    } else {
+      console.log('There is a player 1 and player2');
+    }
+    console.log('state:' , state[room]);
+  
+    callback(newPlayer) // You are player 1 or 2 or spectator, typ.
   });
 
   socket.on('updateMousePosPlayer1', (room, { y }) => {

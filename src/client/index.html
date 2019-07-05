@@ -59,7 +59,8 @@
     <div id="gameView" class='hidden'>
       <div class="buttons">
         <button id='player1Button'>Player 1 ready</button>
-        <button id='player2Button'>Player 2 ready</button>
+        <!-- <button id='player2Button'>Player 2 ready</button> -->
+        <span class='hidden' id='waitingForPlayer'>Waiting for player</span>
       </div>
       <canvas 
         id='gameCanvas'
@@ -69,7 +70,7 @@
       >
     </canvas>
     <div id="winView" class='hidden'>
-        Somebody won yay
+        <span id='winnerName'></span> won yay
       </div>
   </div>
 

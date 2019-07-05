@@ -39,8 +39,12 @@ var joinText2 = ' Player2: click to join';
 
 var socket = io();
 
-let room = ''
+let room = '';
 
+const player = {
+  player: '', // 1 or 2
+  id: '' // socket.id
+}
 
 socket.on('connect', function () {
   console.log('Connected to server');
@@ -54,6 +58,7 @@ const winView = document.getElementById('winView');
 const gameView = document.getElementById('gameView');
 const canvas = document.getElementById('gameCanvas');
 const canvasContext = canvas.getContext('2d');
+const waitingForPlayer = document.getElementById('waitingForPlayer');
 
 const changeView = (view) => {
   console.log('should change view to', view)
@@ -62,12 +67,18 @@ const changeView = (view) => {
     canvas.classList.remove('hidden');
     winView.classList.add('hidden');
     joinRoomView.classList.add('hidden');
+    waitingForPlayer.classList.add('hidden');
   } else if (view === 'joinView') {
     joinRoomView.classList.remove('hidden');
     gameView.classList.add('hidden');
   } else if(view === 'winView') {
     winView.classList.remove('hidden');
     canvas.classList.add('hidden');
+    waitingForPlayer.classList.add('hidden');
+    player1Button.classList.remove('hidden');
+    const winner = document.getElementById('winnerName');
+    winner.textContent = winningPlayer;
+    console.log('winner: ', winner);
 
   }
 }
@@ -90,13 +101,11 @@ function joinRoom () {
   console.log('room: ', room);
   console.log('param: ', param);
   changeView('gameView');
-  socket.emit('join', param, function (err) {
-    if (err) {
-      alert(err);
-      window.location.href = '/';
-    } else {
-      console.log('No error.');
-    }
+  socket.emit('join', param, function (newPlayer) {
+    //chosenPlayer is either player1, 2 or nothing
+    player.player = newPlayer.player;
+    player.id = newPlayer.id;
+    console.log('I am: ', player.player);
   })
 }
 
@@ -176,16 +185,19 @@ function startGame () {
   centerX = canvas.width / 2;
   player1Join.y = centerY;
   player2Join.y = centerY;
-
+  // Ta bort att ha två knappar. Ha bara en 'ready'-knapp och sedan bli 'waitng for other player'
   player1Button.onclick = () => {
+    console.log('onClick', waitingForPlayer, player1Button);
     socket.emit('playerReady', 'player1', room);
     hasChosenPlayer = 'player1';
     player1Button.disabled = true;
+    waitingForPlayer.classList.remove('hidden');
+    player1Button.classList.add('hidden');
   }
-  player2Button.disabled = true;
-  player2Button.onclick = () => {
-    socket.emit('playerReady', 'player2', room);
-  }
+  // player2Button.disabled = true;
+  // player2Button.onclick = () => {
+  //   socket.emit('playerReady', 'player2', room);
+  // }
   drawEverything(false, '');
   canvas.addEventListener('mousemove',
     function(e) {
