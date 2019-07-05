@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Pong Multiplayer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        body {
+          background: black;
+          text-align: center;
+          color: lightgray;
+        }
+  
+        header {
+          border:1px solid black;
+          padding: 16px;
+        }
+  
+        h1 {
+          font-weight: 700;
+          font-size: 24px;
+          text-transform: uppercase;
+        }
+        .buttons {
+          display: flex;
+          justify-content: center;
+        }
+        .hidden {
+          display: none;
+        }
+        canvas {
+          border: 1px solid lightgray;
+        }
+      </style>
+  </head>
+  <body class="">
+    <header id='header'>
+        <h1 >
+          Pong
+        </h1>
+      </header>
+    <div class="" id='joinRoomView'>
+      <form id='form'>
+          <div class="form-field">
+            <h3>Join a game</h3>
+          </div>
+          <div class="form-field">
+            <label for="name">Display name</label>
+            <input type="text" id='name' autofocus />
+          </div>
+          <div class="form-field">
+            <label for="room">Room name</label>
+            <input type="text" id='room' />
+          </div>
+          <div class="form-field">
+            <button type="submit">Join</button>
+          </div>
+      </form>     
+    </div>
+
+    <div id="gameView" class='hidden'>
+      <div class="buttons">
+        <button id='player1Button'>Click when ready!</button>
+        <!-- <button id='player2Button'>Player 2 ready</button> -->
+        <span class='hidden' id='waitingForPlayer'>Waiting for player</span>
+      </div>
+      <canvas
+        class='hidden'
+        id='gameCanvas'
+        width="800"
+        height="600"
+        tabindex="0"
+      >
+    </canvas>
+    <div id="winView" class='hidden'>
+        <span id='winnerName'></span> won yay
+      </div>
+  </div>
+
+  
+  <script type="text/javascript" src="game.f45f459cb3fe7a716ec4.js"></script></body>
+</html>
