@@ -31,8 +31,8 @@ const WINNING_SCORE = 3;
 const originalBall = {
   x: 250,
   y: 250, 
-  speedX: 20,
-  speedY: 15
+  speedX: 5,
+  speedY: 2
 }
 
 const PLAYER = {
@@ -68,6 +68,16 @@ const originalRoom = {
 
 const getConnectedPlayers = (room) => {
   return Object.keys(io.sockets.adapter.rooms[room].sockets);
+}
+
+const whichPlayer = (room, socketId) => {
+  let player = '';
+  if (state[room].player1.id === socketId) {
+    player = 'player1';
+  } else if (state[room].player2.id === socketId) {
+    player = 'player2'
+  }
+  return player;
 }
 
 io.on('connection', (socket) => {
@@ -136,17 +146,27 @@ io.on('connection', (socket) => {
     callback(newPlayer) // You are player 1 or 2 or spectator, typ.
   });
 
-  socket.on('updateMousePosPlayer1', (room, { y }) => {
-    state[room].player1.pointToWherePaddleShouldGo = y;
+  socket.on('updatePosition', (room, { y }) => {
+    
+    const player = whichPlayer(room, socket.id);
+    console.log('player: ', player)
+    state[room][player].pointToWherePaddleShouldGo = y;
   });
 
-  socket.on('updateMousePosPlayer2', (room, { y }) => {
-    state[room].player2.pointToWherePaddleShouldGo = y;
-  });
+  // socket.on('updateMousePosPlayer1', (room, { y }) => {
+  //   console.log('socketId: ', socket.id);
+  //   state[room].player1.pointToWherePaddleShouldGo = y;
+  // });
+
+  // socket.on('updateMousePosPlayer2', (room, { y }) => {
+  //   state[room].player2.pointToWherePaddleShouldGo = y;
+  // });
 
   function startGame (room) {
+    
     console.log('startGame server side', room);
     console.log('startGame state:', state[room]);
+    io.to(room).emit('startGame');
     state[room].showingWinScreen = false;
     // state[room].ball = originalBall;
     ballReset(room);
@@ -188,18 +208,26 @@ io.on('connection', (socket) => {
     }, 1000 / fps);
   };
 
-  socket.on('playerReady', (player, room) => {
-    console.log(player, room);
-    if (player === 'player1') {
-      console.log('player 1 ready in ', room);
-      state[room].player1.ready = true;
-      state[room].player2.ready = true;
-      io.to(room).emit('playerJoined', player);
-    } else if( player === 'player2') {
-      console.log('player 2 ready');
-      state[room].player2.ready = true;
-      io.to(room).emit('playerJoined', player);
+  socket.on('playerReady', (room) => {
+    
+    const player = whichPlayer(room, socket.id);
+    console.log('playerReady',player, room);
+    if (!player) {
+      console.log('something went wrong with player', player);
+      return;
     }
+    state[room][player].ready = true;
+    io.to(room).emit('playerJoined', player);
+    // if (player === 'player1') {
+    //   console.log('player 1 ready in ', room);
+    //   state[room].player1.ready = true;
+    //   state[room].player2.ready = true;
+    //   io.to(room).emit('playerJoined', player);
+    // } else if( player === 'player2') {
+    //   console.log('player 2 ready');
+    //   state[room].player2.ready = true;
+    //   io.to(room).emit('playerJoined', player);
+    // }
 
     if (state[room].player1.ready && state[room].player2.ready) {
       startGame(room);
@@ -273,7 +301,18 @@ function movePaddle1(room) {
     newY += 15;
   }
   state[room].player1.y = newY;
-
+}
+function movePaddle2(room) {
+  // if (!state[room].player1.pointToWherePaddleShouldGo) return;
+  const currentY = state[room].player2.y;
+  let newY = currentY;
+  const pointToWherePaddleShouldGo = state[room].player2.pointToWherePaddleShouldGo;
+  if (pointToWherePaddleShouldGo + 20 < (currentY + PADDLE_HEIGHT / 2)) {
+    newY -= 15;
+  } else if (pointToWherePaddleShouldGo -20 > (currentY + PADDLE_HEIGHT / 2)) {
+    newY += 15;
+  }
+  state[room].player2.y = newY;
 }
 
 function moveEverything(room) {
@@ -281,6 +320,7 @@ function moveEverything(room) {
   // computerMovement();
   moveBall(room);
   movePaddle1(room);
+  movePaddle2(room);
   // Emit all state
   io.to(room).emit('updateState', state[room]);
   

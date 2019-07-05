@@ -59,19 +59,21 @@ const gameView = document.getElementById('gameView');
 const canvas = document.getElementById('gameCanvas');
 const canvasContext = canvas.getContext('2d');
 const waitingForPlayer = document.getElementById('waitingForPlayer');
+const header = document.getElementById('header');
 
 const changeView = (view) => {
   console.log('should change view to', view)
   if (view === 'gameView') {
+    header.classList.add('hidden');
     gameView.classList.remove('hidden');
-    canvas.classList.remove('hidden');
     winView.classList.add('hidden');
     joinRoomView.classList.add('hidden');
-    waitingForPlayer.classList.add('hidden');
   } else if (view === 'joinView') {
+    header.classList.remove('hidden');
     joinRoomView.classList.remove('hidden');
     gameView.classList.add('hidden');
   } else if(view === 'winView') {
+    header.classList.remove('hidden');
     winView.classList.remove('hidden');
     canvas.classList.add('hidden');
     waitingForPlayer.classList.add('hidden');
@@ -79,7 +81,10 @@ const changeView = (view) => {
     const winner = document.getElementById('winnerName');
     winner.textContent = winningPlayer;
     console.log('winner: ', winner);
-
+  } else if(view === 'gameStart') {
+    canvas.classList.remove('hidden');
+    waitingForPlayer.classList.add('hidden');
+    header.classList.add('hidden');
   }
 }
 
@@ -129,6 +134,7 @@ socket.on('updateState', (state) => {
   ballX = ball.x;
   ballY = ball.y;
   paddle1Y = player1.y;
+  paddle2Y = player2.y;
   showingWinScreen = false;
   player1score = player1.score;
   player2score = player2.score;
@@ -164,6 +170,11 @@ socket.on('renderGame', () => {
   startGame();
 });
 
+socket.on('startGame', () => {
+  console.log('Should start game');
+  changeView('gameStart');
+});
+
 function calculateMousePos(e) {
   var rect = canvas.getBoundingClientRect();
   var root = document.documentElement;
@@ -179,6 +190,8 @@ function startGame () {
   console.log('startGame');
   // canvas = document.getElementById('gameCanvas');
   // canvasContext = canvas.getContext('2d');
+  canvas.width = window.innerWidth - 20;
+  canvas.height = window.innerHeight - 20;
   player1Join.x = canvas.width / 2 - 200;
   player2Join.x = canvas.width / 2 + 200;
   centerY = canvas.height / 2 - 25;
@@ -188,7 +201,7 @@ function startGame () {
   // Ta bort att ha två knappar. Ha bara en 'ready'-knapp och sedan bli 'waitng for other player'
   player1Button.onclick = () => {
     console.log('onClick', waitingForPlayer, player1Button);
-    socket.emit('playerReady', 'player1', room);
+    socket.emit('playerReady', room);
     hasChosenPlayer = 'player1';
     player1Button.disabled = true;
     waitingForPlayer.classList.remove('hidden');
@@ -198,12 +211,31 @@ function startGame () {
   // player2Button.onclick = () => {
   //   socket.emit('playerReady', 'player2', room);
   // }
-  drawEverything(false, '');
+  // drawEverything(false, '');
   canvas.addEventListener('mousemove',
     function(e) {
       var mousePos = calculateMousePos(e);
       if (room) {
-        socket.emit('updateMousePosPlayer1', room, mousePos);
+        socket.emit('updatePosition', room, mousePos);
+        // socket.emit('updateMousePosPlayer1', room, mousePos);
+      }
+      
+    });
+  canvas.addEventListener('touchstart',
+    function(e) {
+      var mousePos = calculateMousePos(e);
+      if (room) {
+        socket.emit('updatePosition', room, mousePos);
+        // socket.emit('updateMousePosPlayer1', room, mousePos);
+      }
+      
+    });
+  canvas.addEventListener('touchmove',
+    function(e) {
+      var mousePos = calculateMousePos(e);
+      if (room) {
+        socket.emit('updatePosition', room, mousePos);
+        // socket.emit('updateMousePosPlayer1', room, mousePos);
       }
       
     });
