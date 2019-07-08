@@ -1,20 +1,14 @@
-const path = require('path');
-const http = require('http');
+
 const express = require('express');
 const socketIO = require('socket.io');
-const publicPath = path.join(__dirname, '../public');
 const port = process.env.PORT || 3000;
-var app = express();
-// var server =  http.createServer(app);
-
+const app = express();
 
 const webpack = require('webpack');
 const webpackDevMiddleware = require('webpack-dev-middleware');
 const webpackConfig = require('../../webpack.dev.js');
-// app.use(express.static(publicPath));
 app.use(express.static('public'));
 if (process.env.NODE_ENV === 'development') {
-  console.log('env development');
   const compiler = webpack(webpackConfig);
   app.use(webpackDevMiddleware(compiler));
 } else {
@@ -28,11 +22,15 @@ var io = socketIO(server);
 const PADDLE_HEIGHT = 100;
 const PADDLE_WIDTH = 10;
 const WINNING_SCORE = 3;
+const canvas = { // This is map size.
+  height: 600,
+  width: 800
+};
 const originalBall = {
   x: 250,
   y: 250, 
-  speedX: 5,
-  speedY: 2
+  speedX: 10,
+  speedY: 6
 }
 
 const PLAYER = {
@@ -99,8 +97,6 @@ io.on('connection', (socket) => {
       connectedSockets: socketsInRoom
     }
     
-    console.log('socketsInRoom: ', socketsInRoom)
-    
     const newPlayer = {
       player: '', // 1 or 2
       id: '' // socket.id
@@ -111,13 +107,11 @@ io.on('connection', (socket) => {
     if (!socketsInRoom.includes(player1Id)) {
       // player1 has left
       delete state[room].player1;
-      console.log('delete player 1');
     } else if (!socketsInRoom.includes(player2Id)) {
       // This means player2 has left
       delete state[room].player2;
     }
     if (!state[room].player1) {
-      console.log('No player 1, add player 1');
       state[room] = {
         ...state[room],
         player1: {
@@ -128,7 +122,6 @@ io.on('connection', (socket) => {
       };
       newPlayer.player = 'player1';
     } else if (!state[room].player2) {
-      console.log('there is a player 1 but No player 2, add player 2')
       state[room] = {
         ...state[room],
         player2: {
@@ -139,36 +132,21 @@ io.on('connection', (socket) => {
       };
       newPlayer.player = 'player2';
     } else {
-      console.log('There is a player 1 and player2');
     }
-    console.log('state:' , state[room]);
   
-    callback(newPlayer) // You are player 1 or 2 or spectator, typ.
+    callback(newPlayer) // You are player 1 or 2 or spectator, or whatever
   });
 
   socket.on('updatePosition', (room, { y }) => {
     
     const player = whichPlayer(room, socket.id);
-    console.log('player: ', player)
     state[room][player].pointToWherePaddleShouldGo = y;
   });
 
-  // socket.on('updateMousePosPlayer1', (room, { y }) => {
-  //   console.log('socketId: ', socket.id);
-  //   state[room].player1.pointToWherePaddleShouldGo = y;
-  // });
-
-  // socket.on('updateMousePosPlayer2', (room, { y }) => {
-  //   state[room].player2.pointToWherePaddleShouldGo = y;
-  // });
-
   function startGame (room) {
-    
-    console.log('startGame server side', room);
-    console.log('startGame state:', state[room]);
     io.to(room).emit('startGame');
     state[room].showingWinScreen = false;
-    // state[room].ball = originalBall;
+
     ballReset(room);
     const fps = 30;
     const interval = setInterval(function() {
@@ -186,10 +164,6 @@ io.on('connection', (socket) => {
         state[room].player2.ready = false;
         state[room].player1.score = 0;
         state[room].player2.score = 0;
-        // player1Ready = false;
-        // player2Ready = false;
-        // player1score = 0;
-        // player2score = 0;
         clearInterval(interval);
       } else {
         const { players } = state[room];
@@ -218,16 +192,7 @@ io.on('connection', (socket) => {
     }
     state[room][player].ready = true;
     io.to(room).emit('playerJoined', player);
-    // if (player === 'player1') {
-    //   console.log('player 1 ready in ', room);
-    //   state[room].player1.ready = true;
-    //   state[room].player2.ready = true;
-    //   io.to(room).emit('playerJoined', player);
-    // } else if( player === 'player2') {
-    //   console.log('player 2 ready');
-    //   state[room].player2.ready = true;
-    //   io.to(room).emit('playerJoined', player);
-    // }
+
 
     if (state[room].player1.ready && state[room].player2.ready) {
       startGame(room);
@@ -237,7 +202,7 @@ io.on('connection', (socket) => {
 });
 
 function someoneDisonnected (room) {
-  // Vad ska hända då? Får gå tillbaka till 'waiting for players' som för övrigt inte finns. Men ah, starta om från att behöva klicka 'ready'
+
   console.log('someoneDiscconected');
   state[room].players = getConnectedPlayers(room);
   console.log(state[room].players)
@@ -245,16 +210,12 @@ function someoneDisonnected (room) {
   io.to(room).emit('playerDisconnected');
   io.to(room).emit('showingWinScreen', state[room].winningPlayer);
 }
-var canvas = { // Skicka med det här i parameter nånstans istället.
-  height: 600,
-  width: 800
-};
 
 function moveBall(room) {
   state[room].ball.x += state[room].ball.speedX;
   state[room].ball.y += state[room].ball.speedY;
   const { player1, player2, ball } = state[room];
-  // console.log(state[room].ball.x);
+
   if (ball.x < 0 + PADDLE_WIDTH + 10) {
     if (ball.y > player1.y 
       && ball.y < player1.y + PADDLE_HEIGHT) {
@@ -291,37 +252,45 @@ function moveBall(room) {
 }
 
 function movePaddle1(room) {
-  // if (!state[room].player1.pointToWherePaddleShouldGo) return;
+
   const currentY = state[room].player1.y;
   let newY = currentY;
   const pointToWherePaddleShouldGo = state[room].player1.pointToWherePaddleShouldGo;
-  if (pointToWherePaddleShouldGo + 20 < (currentY + PADDLE_HEIGHT / 2)) {
+  if (pointToWherePaddleShouldGo + 15 < (currentY + PADDLE_HEIGHT / 2)) {
     newY -= 15;
-  } else if (pointToWherePaddleShouldGo -20 > (currentY + PADDLE_HEIGHT / 2)) {
+  } else if (pointToWherePaddleShouldGo - 15 > (currentY + PADDLE_HEIGHT / 2)) {
     newY += 15;
   }
+  if (newY <= 0) {
+    newY = 0;
+  } else if (newY + PADDLE_HEIGHT >= canvas.height) {
+    newY = canvas.height - PADDLE_HEIGHT;
+  }
+
   state[room].player1.y = newY;
 }
 function movePaddle2(room) {
-  // if (!state[room].player1.pointToWherePaddleShouldGo) return;
   const currentY = state[room].player2.y;
   let newY = currentY;
   const pointToWherePaddleShouldGo = state[room].player2.pointToWherePaddleShouldGo;
-  if (pointToWherePaddleShouldGo + 20 < (currentY + PADDLE_HEIGHT / 2)) {
+  if (pointToWherePaddleShouldGo + 15 < (currentY + PADDLE_HEIGHT / 2)) {
     newY -= 15;
-  } else if (pointToWherePaddleShouldGo -20 > (currentY + PADDLE_HEIGHT / 2)) {
+  } else if (pointToWherePaddleShouldGo - 15 > (currentY + PADDLE_HEIGHT / 2)) {
     newY += 15;
   }
+  if (newY <= 0) {
+    newY = 0;
+  } else if (newY + PADDLE_HEIGHT >= canvas.height) {
+    newY = canvas.height - PADDLE_HEIGHT;
+  }
+
   state[room].player2.y = newY;
 }
 
 function moveEverything(room) {
-
-  // computerMovement();
   moveBall(room);
   movePaddle1(room);
   movePaddle2(room);
-  // Emit all state
   io.to(room).emit('updateState', state[room]);
   
 }
@@ -337,19 +306,11 @@ function ballReset(room) {
       state[room].winningPlayer = 'PLAYER 2';
     }
   }
-  // console.log('ballreset: ', room, state);
-  state[room].ball.speedX = -state[room].ball.speedX;
+
+  state[room].ball.speedX = -state[room].ball.speedX; // Direction is the opposite of what is was
   state[room].ball.x = canvas.width / 2;
   state[room].ball.y = canvas.height / 2;
-  // console.log('ballreset after reset: ', room, state);
 }
 function computerMovement() {
-  // 
-  // var paddle2YCenter = paddle2Y + (PADDLE_HEIGHT / 2);
-  // // paddle2Y = ballY - 50;
-  // if (paddle2YCenter < ballY - 35) {
-  //   paddle2Y += 10;
-  // } else if (paddle2YCenter > ballY + 35){
-  //   paddle2Y -= 10;
-  // }
+  // Implement this later
 }

@@ -1,12 +1,8 @@
 import io from 'socket.io-client';
-import { deparam } from './lib/deparam';
+import { debounce } from 'throttle-debounce';
 
-// var canvas;
-// var canvasContext;
 var ballX = 50;
 var ballY = 50;
-var ballSpeedX = 10;
-var ballSpeedY = 8;
 
 var paddle1Y = 250;
 var paddle2Y = 250;
@@ -20,22 +16,6 @@ const WINNING_SCORE = 3;
 var showingWinScreen = true;
 var winningPlayer = 'PLAY';
 
-var player1Join = {
-  x: 200,
-  y: 400
-}
-
-var player2Join = {
-  x: 600,
-  y: 400
-}
-
-var centerX = 400;
-var centerY = 300;
-
-var hasChosenPlayer = '';
-var joinText1 = ' Player1: click to join';
-var joinText2 = ' Player2: click to join';
 
 var socket = io();
 
@@ -46,13 +26,14 @@ const player = {
   id: '' // socket.id
 }
 
+let scaleRatio;
+
 socket.on('connect', function () {
   console.log('Connected to server');
 });
 
 const form = document.getElementById('form');
 const player1Button = document.getElementById('player1Button');
-const player2Button = document.getElementById('player2Button');
 const joinRoomView = document.getElementById('joinRoomView');
 const winView = document.getElementById('winView');
 const gameView = document.getElementById('gameView');
@@ -62,40 +43,62 @@ const waitingForPlayer = document.getElementById('waitingForPlayer');
 const header = document.getElementById('header');
 
 const changeView = (view) => {
+  // Should make variables of viewNames
   console.log('should change view to', view)
-  if (view === 'gameView') {
-    header.classList.add('hidden');
-    gameView.classList.remove('hidden');
-    winView.classList.add('hidden');
-    joinRoomView.classList.add('hidden');
-  } else if (view === 'joinView') {
-    header.classList.remove('hidden');
-    joinRoomView.classList.remove('hidden');
-    gameView.classList.add('hidden');
-  } else if(view === 'winView') {
-    header.classList.remove('hidden');
-    winView.classList.remove('hidden');
-    canvas.classList.add('hidden');
-    waitingForPlayer.classList.add('hidden');
-    player1Button.classList.remove('hidden');
-    const winner = document.getElementById('winnerName');
-    winner.textContent = winningPlayer;
-    console.log('winner: ', winner);
-  } else if(view === 'gameStart') {
-    canvas.classList.remove('hidden');
-    waitingForPlayer.classList.add('hidden');
-    header.classList.add('hidden');
+  switch (view) {
+    case 'gameView':
+      header.classList.add('hidden');
+      gameView.classList.remove('hidden');
+      winView.classList.add('hidden');
+      joinRoomView.classList.add('hidden');
+      break;
+    case 'joinView':
+      header.classList.remove('hidden');
+      joinRoomView.classList.remove('hidden');
+      gameView.classList.add('hidden');
+      break;
+    case 'winView':
+      header.classList.remove('hidden');
+      winView.classList.remove('hidden');
+      canvas.classList.add('hidden');
+      waitingForPlayer.classList.add('hidden');
+      player1Button.classList.remove('hidden');
+      const winner = document.getElementById('winnerName');
+      winner.textContent = winningPlayer;
+      console.log('winner: ', winner);
+      break;
+    case 'gameStartView':
+      canvas.classList.remove('hidden');
+      waitingForPlayer.classList.add('hidden');
+      header.classList.add('hidden');
+      break;
+  
+    default:
+      break;
   }
 }
 
+function setCanvasDimensions() {
+  // map size is 800
+  scaleRatio = (window.innerWidth / 800) * 0.8;
+
+  canvas.width = (scaleRatio * 800);
+  canvas.height = (scaleRatio * 600);
+  console.log('setCanvasDimenstions()', {
+    canvasWidth: canvas.width, 
+    windowInnerWidth: window.innerWidth, 
+    canvasHeight: canvas.height, 
+    windowInnerHeight: window.innerHeight,
+    scaleRatio: scaleRatio});
+}
+
+
 const onSubmit = (e) => {
   e.preventDefault();
-  console.log('onSubmit')
   joinRoom()
 }
 form.onsubmit = onSubmit;
 function joinRoom () {
-  console.log('joinRoom')
   const name = document.getElementById('name').value;
   const roomValue = document.getElementById('room').value; 
   const param = {
@@ -103,14 +106,11 @@ function joinRoom () {
     room: roomValue
   };
   room = roomValue
-  console.log('room: ', room);
-  console.log('param: ', param);
   changeView('gameView');
   socket.emit('join', param, function (newPlayer) {
     //chosenPlayer is either player1, 2 or nothing
     player.player = newPlayer.player;
     player.id = newPlayer.id;
-    console.log('I am: ', player.player);
   })
 }
 
@@ -131,10 +131,10 @@ socket.on('newPlayerJoined', function () {
 
 socket.on('updateState', (state) => {
   const { player1, player2, ball } = state
-  ballX = ball.x;
-  ballY = ball.y;
-  paddle1Y = player1.y;
-  paddle2Y = player2.y;
+  ballX = ball.x * scaleRatio;
+  ballY = ball.y * scaleRatio;
+  paddle1Y = player1.y * scaleRatio;
+  paddle2Y = player2.y * scaleRatio;
   showingWinScreen = false;
   player1score = player1.score;
   player2score = player2.score;
@@ -145,21 +145,11 @@ socket.on('showingWinScreen', function(newWinningPlayer) {
   console.log('show win screen')
   player1Button.disabled = false;
   showingWinScreen = true;
-  hasChosenPlayer = '';
-  joinText1 = ' Player1: click to join';
-  joinText2 = ' Player2: click to join';
   winningPlayer = newWinningPlayer;
   changeView('winView'); // Byt ut canvas mot andra element
-  // drawEverything(true, winningPlayer);
 });
 
 socket.on('playerJoined', function(player) {
-  console.log('playerjoined', player);
-  if (player === 'player1') {
-    joinText1 = 'Player1: Ready';
-  } else if (player === 'player2'){
-    joinText2 = 'Player2: Ready';
-  }
   changeView('gameView');
   drawEverything();
 });
@@ -172,7 +162,7 @@ socket.on('renderGame', () => {
 
 socket.on('startGame', () => {
   console.log('Should start game');
-  changeView('gameStart');
+  changeView('gameStartView');
 });
 
 function calculateMousePos(e) {
@@ -181,52 +171,38 @@ function calculateMousePos(e) {
   var mouseX = e.clientX - rect.left - root.scrollLeft;
   var mouseY = e.clientY - rect.top - root.scrollTop;
   return {
-    x: mouseX,
-    y: mouseY
+    x: mouseX / scaleRatio,
+    y: mouseY / scaleRatio
   }
 }
 
+window.addEventListener('resize', debounce(400, setCanvasDimensions));
+
 function startGame () {
   console.log('startGame');
-  // canvas = document.getElementById('gameCanvas');
-  // canvasContext = canvas.getContext('2d');
-  canvas.width = window.innerWidth - 20;
-  canvas.height = window.innerHeight - 20;
-  player1Join.x = canvas.width / 2 - 200;
-  player2Join.x = canvas.width / 2 + 200;
-  centerY = canvas.height / 2 - 25;
-  centerX = canvas.width / 2;
-  player1Join.y = centerY;
-  player2Join.y = centerY;
-  // Ta bort att ha två knappar. Ha bara en 'ready'-knapp och sedan bli 'waitng for other player'
+  setCanvasDimensions()
+
   player1Button.onclick = () => {
     console.log('onClick', waitingForPlayer, player1Button);
     socket.emit('playerReady', room);
-    hasChosenPlayer = 'player1';
     player1Button.disabled = true;
     waitingForPlayer.classList.remove('hidden');
     player1Button.classList.add('hidden');
   }
-  // player2Button.disabled = true;
-  // player2Button.onclick = () => {
-  //   socket.emit('playerReady', 'player2', room);
-  // }
-  // drawEverything(false, '');
   canvas.addEventListener('mousemove',
     function(e) {
       var mousePos = calculateMousePos(e);
       if (room) {
         socket.emit('updatePosition', room, mousePos);
-        // socket.emit('updateMousePosPlayer1', room, mousePos);
       }
       
     });
+
   canvas.addEventListener('touchstart',
     function(e) {
       var mousePos = calculateMousePos(e);
       if (room) {
         socket.emit('updatePosition', room, mousePos);
-        // socket.emit('updateMousePosPlayer1', room, mousePos);
       }
       
     });
@@ -235,7 +211,6 @@ function startGame () {
       var mousePos = calculateMousePos(e);
       if (room) {
         socket.emit('updatePosition', room, mousePos);
-        // socket.emit('updateMousePosPlayer1', room, mousePos);
       }
       
     });
@@ -243,7 +218,7 @@ function startGame () {
 
 function drawNet() {
   for (var i = 0; i < canvas.height; i+=40) {
-    colorRect(canvas.width / 2 -1, i, 2, 20, 'white');
+    colorRect((canvas.width / 2 -1), i, 2, 20, 'white');
   }
 }
 
@@ -252,20 +227,13 @@ function drawEverything(showingWinScreen, winningPlayer) {
   colorRect(0, 0, canvas.width, canvas.height, 'black');
 
   if (showingWinScreen) {
-    // canvasContext.fillStyle = 'white';
-    
-    // canvasContext.fillText( `${winningPlayer} won!`, centerX, centerY);
     console.log('winning player: ', winningPlayer)
-    // canvasContext.fillText('Click to continue', centerX-5, centerY + 25);
-    // canvasContext.fillText(joinText1, player1Join.x, player1Join.y);
-    // canvasContext.fillText(joinText2, player2Join.x, player2Join.y);
     return;
   }
-
   drawNet()
-  colorRect(0, paddle1Y, PADDLE_WIDTH, PADDLE_HEIGHT, 'white');
-  colorRect(canvas.width - PADDLE_WIDTH, paddle2Y, PADDLE_WIDTH, PADDLE_HEIGHT, 'white');
-  colorCircle(ballX, ballY, 10, 'white');
+  colorRect(0, paddle1Y, PADDLE_WIDTH * scaleRatio, PADDLE_HEIGHT * scaleRatio, 'white');
+  colorRect((canvas.width) - (PADDLE_WIDTH * scaleRatio), paddle2Y, PADDLE_WIDTH * scaleRatio, PADDLE_HEIGHT * scaleRatio, 'white');
+  colorCircle(ballX, ballY, 10 * scaleRatio, 'white');
  
   canvasContext.fillText(player1score, 100, 100);
   canvasContext.fillText(player2score,canvas.width - 100, 100);
