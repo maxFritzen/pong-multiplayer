@@ -4,20 +4,10 @@ export const player = {
   id: '' // socket.id
 }
 
-let room = '';
-
-let ballX = 50;
-let ballY = 50;
-
-let paddle1Y = 250;
-let paddle2Y = 250;
 export const PADDLE_HEIGHT = 100;
 export const PADDLE_WIDTH = 10;
 
-let player1score = 3;
-let player2score = 0;
-
-const state = {
+const originalState = {
   room: '',
   playerName: '',
   playerId: '',
@@ -29,6 +19,11 @@ const state = {
   player2score: 0,
   winningPlayer: ''
 }
+
+const state = {
+  ...originalState
+}
+
 export { state }
 
 
