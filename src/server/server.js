@@ -7,6 +7,7 @@ const app = express();
 const webpack = require('webpack');
 const webpackDevMiddleware = require('webpack-dev-middleware');
 const webpackConfig = require('../../webpack.dev.js');
+const { MAP_SIZE } = require('../shared/variables');
 app.use(express.static('public'));
 if (process.env.NODE_ENV === 'development') {
   const compiler = webpack(webpackConfig);
@@ -21,11 +22,7 @@ var io = socketIO(server);
 
 const PADDLE_HEIGHT = 100;
 const PADDLE_WIDTH = 10;
-const WINNING_SCORE = 3;
-const canvas = { // This is map size.
-  height: 600,
-  width: 800
-};
+const WINNING_SCORE = 1;
 const originalBall = {
   x: 250,
   y: 250, 
@@ -137,8 +134,7 @@ io.on('connection', (socket) => {
     callback(newPlayer) // You are player 1 or 2 or spectator, or whatever
   });
 
-  socket.on('updatePosition', (room, { y }) => {
-    
+  socket.on('updatePosition', (room, y) => {
     const player = whichPlayer(room, socket.id);
     state[room][player].pointToWherePaddleShouldGo = y;
   });
@@ -148,7 +144,7 @@ io.on('connection', (socket) => {
     state[room].showingWinScreen = false;
 
     ballReset(room);
-    const fps = 30;
+    const fps = 60;
     const interval = setInterval(function() {
       if (!io.sockets.adapter.rooms[room]) {
         console.log('means no one is in this room. Delete room');
@@ -191,6 +187,7 @@ io.on('connection', (socket) => {
       return;
     }
     state[room][player].ready = true;
+    state[room].player2.ready = true; // OBS TA BORT FÖR ATT KÖRA 2
     io.to(room).emit('playerJoined', player);
 
 
@@ -229,14 +226,14 @@ function moveBall(room) {
     }  
   }
 
-  if (ball.x > canvas.width - PADDLE_WIDTH - 10) {
+  if (ball.x > MAP_SIZE.width - PADDLE_WIDTH - 10) {
     if (ball.y > player2.y 
       && ball.y < player2.y + PADDLE_HEIGHT) {
       state[room].ball.speedX = -ball.speedX;
 
       var deltaY = ball.y - (player2.y + PADDLE_HEIGHT / 2);
       state[room].ball.speedY = deltaY * 0.35
-    } else if (ball.x > canvas.width) {
+    } else if (ball.x > MAP_SIZE.width) {
       state[room].player1.score++;
       ballReset(room);
     }  
@@ -246,7 +243,7 @@ function moveBall(room) {
     state[room].ball.speedY = -ball.speedY;
   }
 
-  if (ball.y > canvas.height) {
+  if (ball.y > MAP_SIZE.height) {
     state[room].ball.speedY = -ball.speedY;
   }
 }
@@ -263,11 +260,12 @@ function movePaddle1(room) {
   }
   if (newY <= 0) {
     newY = 0;
-  } else if (newY + PADDLE_HEIGHT >= canvas.height) {
-    newY = canvas.height - PADDLE_HEIGHT;
+  } else if (newY + PADDLE_HEIGHT >= MAP_SIZE.height) {
+    newY = MAP_SIZE.height - PADDLE_HEIGHT;
   }
 
   state[room].player1.y = newY;
+  state[room].player2.y = newY; // OBS TA BORT FÖR ATT KÖRA 2
 }
 function movePaddle2(room) {
   const currentY = state[room].player2.y;
@@ -280,18 +278,25 @@ function movePaddle2(room) {
   }
   if (newY <= 0) {
     newY = 0;
-  } else if (newY + PADDLE_HEIGHT >= canvas.height) {
-    newY = canvas.height - PADDLE_HEIGHT;
+  } else if (newY + PADDLE_HEIGHT >= MAP_SIZE.height) {
+    newY = MAP_SIZE.height - PADDLE_HEIGHT;
   }
 
   state[room].player2.y = newY;
 }
-
+let shouldUpdate = true;
 function moveEverything(room) {
   moveBall(room);
   movePaddle1(room);
   movePaddle2(room);
-  io.to(room).emit('updateState', state[room]);
+  if (shouldUpdate) {
+    io.to(room).emit('updateState', state[room]);
+    shouldUpdate = false
+  } else {
+    shouldUpdate = true;
+  }
+  
+
   
 }
 
@@ -308,8 +313,8 @@ function ballReset(room) {
   }
 
   state[room].ball.speedX = -state[room].ball.speedX; // Direction is the opposite of what is was
-  state[room].ball.x = canvas.width / 2;
-  state[room].ball.y = canvas.height / 2;
+  state[room].ball.x = MAP_SIZE.width / 2;
+  state[room].ball.y = MAP_SIZE.height / 2;
 }
 function computerMovement() {
   // Implement this later
