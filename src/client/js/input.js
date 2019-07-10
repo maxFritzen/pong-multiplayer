@@ -1,5 +1,4 @@
-import { playerIsReady, updateDirection } from './networking';
-import { readyButton, waitingForPlayer, canvas } from './elements';
+import { updateDirection } from './networking';
 import { scaleRatio } from './render';
 
 function onMouseInput(e) {

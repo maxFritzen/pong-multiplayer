@@ -180,16 +180,17 @@ io.on('connection', (socket) => {
 
   socket.on('playerReady', (room) => {
     
-    const player = whichPlayer(room, socket.id);
+    const player = whichPlayer(room, socket.id); // Is it player1 or 2
     console.log('playerReady',player, room);
     if (!player) {
       console.log('something went wrong with player', player);
       return;
     }
+    const playerName = state[room][player].name;
     state[room][player].ready = true;
     state[room].player2.ready = true; // OBS TA BORT FÖR ATT KÖRA 2
-    io.to(room).emit('playerJoined', player);
-
+    socket.broadcast.to(room).emit('otherPlayerIsReady', playerName);
+    console.log(state);
 
     if (state[room].player1.ready && state[room].player2.ready) {
       startGame(room);
@@ -303,13 +304,13 @@ function moveEverything(room) {
 function ballReset(room) {
   const player1score = state[room].player1.score;
   const player2score = state[room].player2.score;
-  if (player1score >= WINNING_SCORE || player2score >= WINNING_SCORE){
+  let whoWon = 'player2';
+  if (player1score >= WINNING_SCORE || player2score >= WINNING_SCORE) {
     state[room].showingWinScreen = true;
     if (player1score > player2score) {
-      state[room].winningPlayer = 'PLAYER 1';
-    } else {
-      state[room].winningPlayer = 'PLAYER 2';
-    }
+      whoWon = 'player1';
+    } 
+    state[room].winningPlayer = state[room][whoWon].name;
   }
 
   state[room].ball.speedX = -state[room].ball.speedX; // Direction is the opposite of what is was

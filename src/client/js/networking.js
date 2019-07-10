@@ -38,7 +38,9 @@ socket.on('showingWinScreen', function(newWinningPlayer) {
   changeView('winView'); // Byt ut canvas mot andra element
 });
 
-socket.on('playerJoined', function(player) {
+socket.on('otherPlayerIsReady', function(playerName) {
+  console.log('other player is ready', playerName);
+  state.player2Name = playerName;
   changeView('gameView');
   drawEverything();
 });
@@ -64,6 +66,7 @@ export function joinRoom (name, roomValue) {
     room: roomValue
   };
   state.room = roomValue;
+  player.name = name;
 
   console.log('room:', state.room);
   changeView('gameView');

@@ -1,7 +1,8 @@
 
 export const player = {
   player: '', // 1 or 2
-  id: '' // socket.id
+  id: '', // socket.id
+  name: ''
 }
 
 export const PADDLE_HEIGHT = 100;
@@ -11,6 +12,7 @@ const originalState = {
   room: '',
   playerName: '',
   playerId: '',
+  player2Name: '',
   ballX: 0,
   ballY: 0,
   paddle1Y: 250,

@@ -1,5 +1,5 @@
 import { state, PADDLE_HEIGHT, PADDLE_WIDTH }from './state';
-import { canvas, canvasContext } from './elements';
+import { canvas, canvasContext, playerNames } from './elements';
 import { MAP_SIZE } from '../../shared/variables';
 // Scale
 export let scaleRatio = 1;
@@ -12,6 +12,8 @@ export function setCanvasDimensions() {
   
   canvas.width = (scaleRatio * 800);
   canvas.height = (scaleRatio * 600);
+  playerNames.style.width = canvas.width + 'px';
+  console.log(playerNames.style.width)
   console.log('setCanvasDimenstions()', {
     canvasWidth: canvas.width, 
     windowInnerWidth: window.innerWidth, 

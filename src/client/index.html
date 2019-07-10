@@ -34,6 +34,14 @@
           border: 1px solid lightgray;
           user-select: none;
         }
+
+        .playerNames {
+          display: flex;
+          justify-content: space-between;
+          margin: 0 auto;
+        }
+
+
       </style>
   </head>
   <body class="">
@@ -65,8 +73,11 @@
     <div id="gameView" class='hidden'>
       <div class="buttons">
         <button id='readyButton'>Click when ready!</button>
-        <!-- <button id='player2Button'>Player 2 ready</button> -->
         <span class='hidden' id='waitingForPlayer'>Waiting for player</span>
+      </div>
+      <div class="playerNames" id='playerNames'>
+        <div class="playerName" id='player1'></div>
+        <div class="playerName" id='player2'></div>
       </div>
       <canvas
         class='hidden'

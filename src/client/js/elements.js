@@ -1,7 +1,7 @@
 
 import { joinRoom } from './networking';
 import { playerIsReady } from './networking';
-import { state } from './state';
+import { state, player } from './state';
 
 
 export let form = null;
@@ -13,6 +13,8 @@ export let canvas = null;
 export let canvasContext = null;
 export let waitingForPlayer = null;
 export let header = null;
+export let playerNames = null;
+
 
 export function getElements () {
   console.log('Get elements');
@@ -26,6 +28,7 @@ export function getElements () {
   canvasContext = canvas.getContext('2d');
   waitingForPlayer = document.getElementById('waitingForPlayer');
   header = document.getElementById('header');
+  playerNames = document.getElementById('playerNames');
 
   readyButton.onclick = () => {
     readyButton.disabled = true;
@@ -48,7 +51,20 @@ export const changeView = (view) => {
       gameView.classList.remove('hidden');
       winView.classList.add('hidden');
       joinRoomView.classList.add('hidden');
+      const names = playerNames.getElementsByClassName('playerName');
+      // playerNames.style.width = canvas.width + 'px';
+      
+      for (let item of names) {
+        console.log(item.id);
+        if (item.id === player.player) { //player.player === 'player1' or 'player2'
+          item.textContent = player.name;
+        } else {
+          item.textContent = state.player2Name;
+        }
+      }
+  
       break;
+      
     case 'joinView':
       header.classList.remove('hidden');
       joinRoomView.classList.remove('hidden');
@@ -67,6 +83,7 @@ export const changeView = (view) => {
       canvas.classList.remove('hidden');
       waitingForPlayer.classList.add('hidden');
       header.classList.add('hidden');
+      winView.classList.add('hidden');
       break;
   
     default:
