@@ -38,6 +38,12 @@ socket.on('showingWinScreen', function(newWinningPlayer) {
   changeView('winView'); // Byt ut canvas mot andra element
 });
 
+socket.on('newPlayerJoined', (player) => {
+  console.log(('new player joined ', player));
+  state.player2Name = player;
+  changeView('gameView');
+})
+
 socket.on('otherPlayerIsReady', function(playerName) {
   console.log('other player is ready', playerName);
   state.player2Name = playerName;
@@ -45,8 +51,8 @@ socket.on('otherPlayerIsReady', function(playerName) {
   drawEverything();
 });
 
-socket.on('renderGame', () => {
-  console.log('should renderGame');
+socket.on('renderGame', (room) => {
+  console.log('')
   // changeView('gameView');
   startGame();
 });
@@ -65,13 +71,17 @@ export function joinRoom (name, roomValue) {
     name,
     room: roomValue
   };
-  state.room = roomValue;
   player.name = name;
   
-  socket.emit('join', param, function (newPlayer) {
+  socket.emit('join', param, function (newPlayer, otherPlayer, room) {
     //chosenPlayer is either player1, 2 or nothing
-    console.log('JoinedRoom. Player is: ', newPlayer);
+    console.log('JoinedRoom.', room, ' Player is: ', newPlayer);
+    state.room = room;
+    console.log('state: ',state);
     player.player = newPlayer.player;
+    if (otherPlayer) {
+      state.player2Name = otherPlayer;
+    }
     changeView('gameView');
   })
 }

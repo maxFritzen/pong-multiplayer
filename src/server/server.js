@@ -91,15 +91,12 @@ io.on('connection', (socket) => {
       } else {
         console.log('Should join already created and empty random room');
         room = state.emptyRooms.shift();
-        console.log('emptyRooms:', state.emptyRooms);
-        
+        console.log('emptyRooms:', state.emptyRooms); 
       }
-      console.log('Should create and join random room')
-      
     }
     socket.join(room, () => console.log('joined room', room));
     io.to(room).emit('renderGame');
-    socket.broadcast.to(room).emit('newPlayerJoined');
+    socket.broadcast.to(room).emit('newPlayerJoined', name);
     const currentPlayers = state[room] ? state[room].players : []
     const currentStateRoom = state[room] ? state[room] : originalRoom;
     const socketsInRoom = getConnectedPlayers(room);
@@ -117,6 +114,7 @@ io.on('connection', (socket) => {
     // Is the new player player1, 2 or nothing?
     const player1Id = state[room].player1.id;
     const player2Id = state[room].player2.id;
+    let otherPlayer = ''
     if (!socketsInRoom.includes(player1Id)) {
       // player1 has left
       delete state[room].player1;
@@ -144,10 +142,11 @@ io.on('connection', (socket) => {
         }
       };
       newPlayer.player = 'player2';
+      otherPlayer = state[room].player1.name;
     } else {
     }
-  
-    callback(newPlayer) // You are player 1 or 2 or spectator, or whatever
+    
+    callback(newPlayer, otherPlayer, room) // You are player 1 or 2 or spectator, or whatever
   });
 
   socket.on('updatePosition', (room, y) => {
@@ -195,7 +194,7 @@ io.on('connection', (socket) => {
   };
 
   socket.on('playerReady', (room) => {
-    
+    console.log('playerReay room:', room)
     const player = whichPlayer(room, socket.id); // Is it player1 or 2
     console.log('playerReady',player, room);
     if (!player) {
@@ -204,7 +203,7 @@ io.on('connection', (socket) => {
     }
     const playerName = state[room][player].name;
     state[room][player].ready = true;
-    state[room].player2.ready = true; // OBS TA BORT FÖR ATT KÖRA 2
+    // state[room].player2.ready = true; // OBS TA BORT FÖR ATT KÖRA 2
     socket.broadcast.to(room).emit('otherPlayerIsReady', playerName);
     console.log(state);
 
@@ -282,7 +281,7 @@ function movePaddle1(room) {
   }
 
   state[room].player1.y = newY;
-  state[room].player2.y = newY; // OBS TA BORT FÖR ATT KÖRA 2
+  // state[room].player2.y = newY; // OBS TA BORT FÖR ATT KÖRA 2
 }
 function movePaddle2(room) {
   const currentY = state[room].player2.y;
