@@ -7,6 +7,7 @@ const app = express();
 const webpack = require('webpack');
 const webpackDevMiddleware = require('webpack-dev-middleware');
 const webpackConfig = require('../../webpack.dev.js');
+const shortid = require('shortid');
 const { MAP_SIZE } = require('../shared/variables');
 app.use(express.static('public'));
 if (process.env.NODE_ENV === 'development') {
@@ -42,7 +43,7 @@ const PLAYER = {
 
 // Hold all variables here in state[room].
 const state = {
-
+  emptyRooms: [] 
 }
 
 const originalRoom = {
@@ -79,8 +80,23 @@ io.on('connection', (socket) => {
   console.log('New user connected');
 
   socket.on('join', (params, callback) => {
-    const { name, room } = params;
+    let { name, room } = params;
     console.log('player joined room', room);
+    if (!room) {
+      console.log('Empty string for room');
+      if (!state.emptyRooms.length) {
+        console.log('Should create random room');
+        room = shortid.generate();
+        state.emptyRooms.push(room);
+      } else {
+        console.log('Should join already created and empty random room');
+        room = state.emptyRooms.shift();
+        console.log('emptyRooms:', state.emptyRooms);
+        
+      }
+      console.log('Should create and join random room')
+      
+    }
     socket.join(room, () => console.log('joined room', room));
     io.to(room).emit('renderGame');
     socket.broadcast.to(room).emit('newPlayerJoined');
