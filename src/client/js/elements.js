@@ -53,13 +53,17 @@ export const changeView = (view) => {
       joinRoomView.classList.add('hidden');
       const names = playerNames.getElementsByClassName('playerName');
       // playerNames.style.width = canvas.width + 'px';
-      
+      console.log(state);
+      console.log(player);
       for (let item of names) {
+        
         console.log(item.id);
         if (item.id === player.player) { //player.player === 'player1' or 'player2'
           item.textContent = player.name;
+          console.log('Should have added playerName:', item.textContent, player.name)
         } else {
           item.textContent = state.player2Name;
+          console.log('player 2 name added')
         }
       }
   

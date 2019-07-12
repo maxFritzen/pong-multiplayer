@@ -1,12 +1,8 @@
 import { updateDirection } from './networking';
 import { scaleRatio } from './render';
+import { canvas } from './elements';
 
 function onMouseInput(e) {
-  //Behövs verkligen den här rect, root osv- uträkningen? tror inte det.
-  // var rect = canvas.getBoundingClientRect();
-  // var root = document.documentElement;
-  // var mouseX = e.clientX - rect.left - root.scrollLeft;
-  // var mouseY = e.clientY - rect.top - root.scrollTop;
   handleInput(e.clientX, e.clientY);
 }
 
@@ -16,7 +12,11 @@ function onTouchInput(e) {
 }
 
 function handleInput(x, y) {
-  updateDirection(y / scaleRatio);
+  const rect = canvas.getBoundingClientRect();
+  const root = document.documentElement;
+  // const x = x - rect.left - root.scrollLeft;
+  const clientY = y - rect.top - root.scrollTop;
+  updateDirection(clientY / scaleRatio);
 }
 
 export function startCapturingInput(element) {

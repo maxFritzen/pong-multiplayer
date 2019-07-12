@@ -4,8 +4,13 @@ import { MAP_SIZE } from '../../shared/variables';
 // Scale
 export let scaleRatio = 1;
 export function setCanvasDimensions() {
-  const mapWidth = MAP_SIZE.width;
-  scaleRatio = (window.innerWidth / mapWidth) * 0.8;
+  // Check if width is greater than height => means probably landscape mode.
+  // so need to scale according to height, to fit on screen.
+  const isLandscapeMode = window.innerWidth >= window.innerHeight;
+  const map = isLandscapeMode ? MAP_SIZE.height : MAP_SIZE.width;
+  const widthOrHeight = isLandscapeMode ? window.innerHeight : window.innerWidth;
+  scaleRatio = (widthOrHeight / map) * 0.8;
+  // scaleRatio = (window.innerWidth / mapWidth) * 0.8;
   if (scaleRatio > 1) {
     scaleRatio = 1;
   }

@@ -41,13 +41,13 @@ socket.on('showingWinScreen', function(newWinningPlayer) {
 socket.on('otherPlayerIsReady', function(playerName) {
   console.log('other player is ready', playerName);
   state.player2Name = playerName;
-  changeView('gameView');
+  // changeView('gameView');
   drawEverything();
 });
 
 socket.on('renderGame', () => {
   console.log('should renderGame');
-  changeView('gameView');
+  // changeView('gameView');
   startGame();
 });
 
@@ -67,13 +67,12 @@ export function joinRoom (name, roomValue) {
   };
   state.room = roomValue;
   player.name = name;
-
-  console.log('room:', state.room);
-  changeView('gameView');
+  
   socket.emit('join', param, function (newPlayer) {
     //chosenPlayer is either player1, 2 or nothing
+    console.log('JoinedRoom. Player is: ', newPlayer);
     player.player = newPlayer.player;
-    player.id = newPlayer.id;
+    changeView('gameView');
   })
 }
 

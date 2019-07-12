@@ -22,12 +22,12 @@ var io = socketIO(server);
 
 const PADDLE_HEIGHT = 100;
 const PADDLE_WIDTH = 10;
-const WINNING_SCORE = 1;
+const WINNING_SCORE = 10;
 const originalBall = {
   x: 250,
   y: 250, 
-  speedX: 10,
-  speedY: 6
+  speedX: 6,
+  speedY: 2
 }
 
 const PLAYER = {
@@ -296,8 +296,6 @@ function moveEverything(room) {
   } else {
     shouldUpdate = true;
   }
-  
-
   
 }
 
