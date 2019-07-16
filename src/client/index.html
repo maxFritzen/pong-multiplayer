@@ -126,6 +126,7 @@
 
   <script>
       function preventPullToRefresh(element) {
+        console.log(document.querySelector(element));
         var prevent = false;
     
         document.querySelector(element).addEventListener('touchstart', function(e){
@@ -143,7 +144,7 @@
         }, { passive: false});
       }
       const id = document.getElementById('gameCanvas');
-      preventPullToRefresh('canvas'); // pass #id or html tag into the method
+      preventPullToRefresh('body'); // pass #id or html tag into the method
     </script>
   
   </body>

@@ -11,5 +11,6 @@ window.addEventListener('resize', debounce(400, setCanvasDimensions));
 export function startGame () {
   console.log('startGame');
   setCanvasDimensions();
-  startCapturingInput(canvas);
+  const el = document.getElementById('gameView');
+  startCapturingInput(el);
 }
